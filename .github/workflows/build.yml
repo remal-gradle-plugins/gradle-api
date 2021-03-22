@@ -62,15 +62,9 @@ jobs:
           ~/.sonar/cache
 
 
-    - name: Compile
-      run: |
-        chmod -R 0777 .
-        ./gradlew allClasses
-        echo "DISABLE_COMPILATION=true" >> "$GITHUB_ENV"
-
     - name: Build
       run: |
-        ./gradlew build runAllTests
+        ./gradlew build
 
 
     - name: Push back

@@ -1,0 +1,12 @@
+gradle.beforeProject { project ->
+    if (project.parent != null) return
+    project.buildscript {
+        repositories {
+            mavenCentral()
+            gradlePluginPortal()
+        }
+        dependencies {
+            classpath 'name.remal:gradle-plugins:1.2.2'
+        }
+    }
+}

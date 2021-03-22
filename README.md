@@ -1,2 +1,3 @@
-# oss-template-java-gradle
-Template repository for OSS Java projects with Gradle
+# Gradle API
+
+Gradle API artifacts for plugins development
