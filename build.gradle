@@ -1,0 +1,238 @@
+import static java.util.Collections.newSetFromMap
+
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentMap
+import org.gradle.plugins.ide.idea.model.IdeaLanguageLevel
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+buildscript {
+    JavaVersion minimumJavaVersion = JavaVersion.VERSION_11
+    if (JavaVersion.current() < minimumJavaVersion) {
+        throw new GradleException("Minimum Java version for building the project is $minimumJavaVersion")
+    }
+
+    dependencies {
+        classpath 'name.remal:gradle-plugins:1.3.0'
+        classpath 'gradle.plugin.org.jetbrains.gradle.plugin.idea-ext:gradle-idea-ext:1.0'
+    }
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+allprojects {
+    //group = 'name.remal.unspecified'
+    version = '0.0.0-SNAPSHOT'
+
+    apply plugin: 'name.remal.default-plugins'
+
+    tasks.maybeCreate('allClasses')
+
+    pluginManager.withPlugin('java') {
+        apply plugin: 'name.remal.insert-null-checks'
+
+        repositories {
+            mavenCentral()
+        }
+
+        configurations.create('projectDependencyConstraints') { Configuration conf ->
+            conf.dependencies.addAll(
+                [
+                ].collect { project.dependencies.enforcedPlatform(it) }
+            )
+
+            conf.dependencies.addAll(
+                [
+                    'org.junit:junit-bom:5.7.1',
+                ].collect { project.dependencies.platform(it) }
+            )
+
+            conf.dependencyConstraints.addAll(
+                [
+                    // Static analysis annotations
+                    'com.google.code.findbugs:jsr305:3.0.2',
+                    'com.google.errorprone:error_prone_annotations:2.5.1',
+                    'org.jetbrains:annotations:20.1.0',
+
+                    // Annotation processors
+                    'org.projectlombok:lombok:1.18.16',
+                    'org.projectlombok:lombok-mapstruct-binding:0.2.0',
+
+                    // Compile
+
+                    // Test
+
+                    // Jacoco
+                    'org.jacoco:org.jacoco.agent:0.8.6',
+
+                    // Checkstyle
+                    'com.puppycrawl.tools:checkstyle:8.41',
+                ].collect { project.dependencies.constraints.create(it) }
+            )
+
+            conf.canBeConsumed = false
+            conf.canBeResolved = false
+            conf.extendsFrom = []
+
+            configurations.matching { it != conf }.configureEach { extendsFrom(conf) }
+        }
+
+        configurations {
+            compileOnlyAllHidden { conf ->
+                // We don't want IDE to index these dependencies, but they are required for compilation
+                project.tasks.withType(AbstractCompile) {
+                    onlyIf {
+                        Collection<File> confFiles = conf.files
+                        if (!confFiles.isEmpty()) {
+                            classpath = classpath + project.files(confFiles)
+                        }
+                        return true
+                    }
+                }
+            }
+            staticAnalysis {
+                compileOnly.extendsFrom(it)
+                testImplementation.extendsFrom(it)
+            }
+            optional {
+                compileOnly.extendsFrom(it)
+                testImplementation.extendsFrom(it)
+            }
+        }
+
+        dependencies {
+            staticAnalysis 'com.google.code.findbugs:jsr305'
+            staticAnalysis 'com.google.errorprone:error_prone_annotations'
+            staticAnalysis 'org.jetbrains:annotations'
+
+            aptOnly 'org.projectlombok:lombok-mapstruct-binding'
+
+            apt 'org.projectlombok:lombok'
+
+
+            testImplementation 'org.junit.jupiter:junit-jupiter-api'
+            testImplementation 'org.junit.jupiter:junit-jupiter-params'
+
+            testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+        }
+
+        transitiveDependencies {
+            excludeStaticAnalysisTools()
+        }
+
+        configurations.all {
+            resolutionStrategy {
+                eachDependency { DependencyResolveDetails details ->
+                    details.target.with {
+                        String groupModule = "$group:$name"
+                        if (groupModule == 'org.hamcrest:hamcrest-core') {
+                            details.useTarget("$group:hamcrest:$version")
+                        }
+                    }
+                }
+            }
+        }
+
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+
+        tasks.withType(JavaCompile) {
+            options.compilerArgs.addAll(
+                [
+                    '-Werror',
+                    '-Xlint:all',
+                    '-Xlint:-rawtypes',
+                    '-Xlint:-serial',
+                    '-Xlint:-processing',
+                ]
+            )
+        }
+
+        aptOptions {
+            configurations.aptOnly.allDependencies.all { Dependency dep ->
+                if ("${dep.group}:${dep.name}" == 'org.mapstruct:mapstruct-processor') {
+                    processorArgs.put('mapstruct.suppressGeneratorTimestamp', true)
+                    processorArgs.put('mapstruct.suppressGeneratorVersionInfoComment', true)
+                }
+            }
+        }
+
+        sourceSets.all { SourceSet sourceSet ->
+            tasks.maybeCreate('allClasses').dependsOn(sourceSet.classesTaskName)
+        }
+
+        tasks.matching { it instanceof JavaForkOptions }.all {
+            List<String> jvmArgs = it.jvmArgs
+            jvmArgs += '--illegal-access=deny'
+            it.jvmArgs = jvmArgs
+
+            systemProperty('spring.main.banner-mode', 'off')
+            systemProperty('logging.pattern.dateformat', 'HH:mm:ss.SSS')
+            systemProperty('LOG_DATEFORMAT_PATTERN', systemProperties['logging.pattern.dateformat'])
+        }
+
+        tasks.withType(Test) {
+            useJUnitPlatform()
+
+            testLogging {
+                events('FAILED')
+            }
+
+            Set<Object> testsWithStdErr = newSetFromMap(new ConcurrentHashMap<>())
+            ConcurrentMap<Object, List<String>> testsMessages = new ConcurrentHashMap<>()
+            onOutput { TestDescriptor descr, TestOutputEvent event ->
+                if (event.destination.name() == 'StdErr') {
+                    testsWithStdErr.add(descr.id)
+                }
+
+                List<String> testMessages = testsMessages.computeIfAbsent(descr.id, { new ArrayList<>() })
+                testMessages.add(event.getMessage())
+            }
+            afterTest { TestDescriptor descr, TestResult result ->
+                if (result.resultType.name() == 'FAILURE' || testsWithStdErr.contains(descr.id)) {
+                    List<String> testMessages = testsMessages.get(descr.id)
+                    if (testMessages != null) {
+                        println()
+                        println("Output of $descr.className > $descr.displayName:")
+                        testMessages.forEach { print(" > $it") }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+apply plugin: 'java-library'
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+apply plugin: 'idea'
+apply plugin: 'org.jetbrains.gradle.plugin.idea-ext'
+apply plugin: 'name.remal.idea-settings'
+
+idea {
+    project {
+        jdkName = '11'
+        targetBytecodeVersion = JavaVersion.VERSION_1_8
+        languageLevel = new IdeaLanguageLevel(targetBytecodeVersion.majorVersion)
+
+        settings {
+            doNotDetectFrameworks('android', 'web')
+
+            encodings {
+                encoding = 'UTF-8'
+                bomPolicy = 'WITH_NO_BOM'
+                properties {
+                    encoding = 'US-ASCII'
+                    transparentNativeToAsciiConversion = true
+                }
+            }
+        }
+    }
+}
