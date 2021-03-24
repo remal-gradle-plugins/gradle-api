@@ -1,0 +1,4 @@
+dependencies {
+    compileOnly gradleApi()
+    compileOnly gradleTestKit()
+}

@@ -1,13 +1,13 @@
+import build.collect.CollectGradleApiInfo
+import build.collect.CollectGradleApiPlugin
+import build.gradleApi.PublishGradleApiPlugin
+import build.gradleTestKit.PublishGradleTestKitPlugin
+import build.localGroovy.PublishLocalGroovyPlugin
 import org.gradle.plugins.ide.idea.model.IdeaLanguageLevel
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
 buildscript {
-    JavaVersion minimumJavaVersion = JavaVersion.VERSION_11
-    if (JavaVersion.current() < minimumJavaVersion) {
-        throw new GradleException("Minimum Java version for building the project is $minimumJavaVersion")
-    }
-
     dependencies {
         classpath 'gradle.plugin.org.jetbrains.gradle.plugin.idea-ext:gradle-idea-ext:1.0'
     }
@@ -15,7 +15,14 @@ buildscript {
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-apply plugin: 'java-library'
+apply plugin: CollectGradleApiPlugin
+apply plugin: PublishLocalGroovyPlugin
+apply plugin: PublishGradleApiPlugin
+apply plugin: PublishGradleTestKitPlugin
+
+tasks.withType(CollectGradleApiInfo) {
+    it.version = '5.0' // 2.6 min
+}
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
@@ -25,8 +32,8 @@ apply plugin: 'name.remal.idea-settings'
 
 idea {
     project {
-        jdkName = '11'
-        targetBytecodeVersion = JavaVersion.VERSION_11
+        jdkName = '8'
+        targetBytecodeVersion = JavaVersion.VERSION_1_8
         languageLevel = new IdeaLanguageLevel(targetBytecodeVersion.majorVersion)
 
         settings {
