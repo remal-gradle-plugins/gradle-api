@@ -68,8 +68,19 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
             }
         }
 
-        List<File> libFiles = this.libFiles
-            .findAll { libDependencies.contains(it.name) }
+
+        List<File> libFiles = this.libFiles.findAll { libDependencies.contains(it.name) }
+
+        libFiles.addAll(this.libFiles.findAll { it.name.startsWith('kotlin-') })
+
+        libFiles.unique().sort()
+        libFiles.removeIf {
+            (it.name.startsWith('kotlin-compiler-')
+                || it.name.startsWith('kotlin-sam-')
+                || it.name.startsWith('kotlin-script-')
+            )
+        }
+
 
         ClassLoaderFilter classLoaderFilter = this.classLoaderFilter
         for (File libFile : libFiles) {
@@ -167,7 +178,7 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
         assert resolvedModuleComponentIdentifiers.any {
             return "${it.group}:${it.module}" == 'org.jetbrains.kotlin:kotlin-stdlib'
         }
-        if (compareVersions(gradleApiVersion, '6.1') >= 0) {
+        if (compareVersions(gradleApiVersion, '2.0') >= 0) {
             assert resolvedModuleComponentIdentifiers.any {
                 return "${it.group}:${it.module}" == 'org.jetbrains.kotlin:kotlin-stdlib-jdk7'
             }
