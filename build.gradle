@@ -21,7 +21,7 @@ apply plugin: PublishGradleApiPlugin
 apply plugin: PublishGradleTestKitPlugin
 
 tasks.withType(CollectGradleApiInfo) {
-    //it.version = '5.0' // 2.6 min
+    it.version = project.findProperty('gradle-version') //?: '5.0' // 2.6 min
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
