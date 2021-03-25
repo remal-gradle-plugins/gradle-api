@@ -53,4 +53,4 @@ jobs:
       run: |
         echo "Build for Gradle ${{ matrix.gradle-versions }}"
         sed -i 's/-all\.zip/-bin.zip/' gradle/wrapper/gradle-wrapper.properties
-        ./gradlew clean "-Pgradle-version=${{ matrix.gradle-versions }}"
+        ./gradlew help "-Pgradle-version=${{ matrix.gradle-versions }}"
