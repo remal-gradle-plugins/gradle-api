@@ -38,6 +38,7 @@ jobs:
       with:
         submodules: recursive
         fetch-depth: 0
+
     - name: Cache
       id: cache
       uses: actions/cache@v2
@@ -45,20 +46,19 @@ jobs:
         key: ${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/**', '**/*.gradle') }}
         path: |
           ~/.gradle
+
     - name: Setup Java 11
       if: ${{ steps.cache.outputs.cache-hit != 'true' }}
       uses: actions/setup-java@v1
       with:
         java-version: 8
-    - name: Adjust files to be built on CI
-      if: ${{ steps.cache.outputs.cache-hit != 'true' }}
-      run: |
-        sed -i 's/-all\.zip/-bin.zip/' gradle/wrapper/gradle-wrapper.properties
+
     - name: Build
       if: ${{ steps.cache.outputs.cache-hit != 'true' }}
       env:
         GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.workers.max=4 -Dorg.gradle.warning.mode=all -Dsun.net.client.defaultConnectTimeout=15000 -Dsun.net.client.defaultReadTimeout=600000 -Dsun.io.useCanonCaches=false -Djava.awt.headless=true -Dorg.gradle.internal.launcher.welcomeMessageEnabled=false
       run: |
+        sed -i 's/-all\.zip/-bin.zip/' gradle/wrapper/gradle-wrapper.properties
         ./gradlew help
 
   build:
@@ -73,6 +73,12 @@ jobs:
       matrix:
         gradle-versions: ${{ fromJSON(needs.retrieve-gradle-versions.outputs.gradle-versions) }}
     steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
     - name: Cache
       id: cache
       uses: actions/cache@v2
@@ -80,23 +86,16 @@ jobs:
         key: ${{ runner.os }}-gradle-${{ hashFiles('gradle/**', '**/*.gradle') }}
         path: |
           ~/.gradle
+
     - name: Setup Java 11
       uses: actions/setup-java@v1
       with:
         java-version: 8
-    - name: Checkout repository
-      uses: actions/checkout@v2
-      with:
-        submodules: recursive
-        fetch-depth: 0
-
-    - name: Adjust files to be built on CI
-      run: |
-        sed -i 's/-all\.zip/-bin.zip/' gradle/wrapper/gradle-wrapper.properties
 
     - name: Build
       env:
         GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.workers.max=4 -Dorg.gradle.warning.mode=all -Dsun.net.client.defaultConnectTimeout=15000 -Dsun.net.client.defaultReadTimeout=600000 -Dsun.io.useCanonCaches=false -Djava.awt.headless=true -Dorg.gradle.internal.launcher.welcomeMessageEnabled=false
       run: |
         echo "Build for Gradle ${{ matrix.gradle-versions }}"
+        sed -i 's/-all\.zip/-bin.zip/' gradle/wrapper/gradle-wrapper.properties
         ./gradlew help "-Pgradle-version=${{ matrix.gradle-versions }}"
