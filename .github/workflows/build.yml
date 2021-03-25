@@ -28,16 +28,16 @@ jobs:
         min: 6.8
         #min: 2.6
 
-  configure-cache:
-    name: Configure cache
+  populate-cache:
+    name: Populate cache
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
     - name: Cache
       id: cache
       uses: actions/cache@v2
       with:
-        key: ${{ runner.os }}-gradle-${{ hashFiles('gradle/**', '**/*.gradle') }}
+        key: ${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/**', '**/*.gradle') }}
         path: |
           ~/.gradle
     - name: Setup Java 11
@@ -65,7 +65,7 @@ jobs:
   build:
     needs:
     - retrieve-gradle-versions
-    - configure-cache
+    - populate-cache
     name: Build & publish
     runs-on: ubuntu-latest
     timeout-minutes: 30
