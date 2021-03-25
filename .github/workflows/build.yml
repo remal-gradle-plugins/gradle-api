@@ -25,11 +25,47 @@ jobs:
       id: retrieve-gradle-versions
       uses: remal-github-actions/retrieve-gradle-versions@v1
       with:
-        min: 6
+        min: 6.8
         #min: 2.6
 
+  configure-cache:
+    name: Configure cache
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - name: Cache
+      id: cache
+      uses: actions/cache@v2
+      with:
+        key: ${{ runner.os }}-gradle-${{ hashFiles('gradle/**', '**/*.gradle') }}
+        path: |
+          ~/.gradle
+    - name: Setup Java 11
+      if: ${{ steps.cache.outputs.cache-hit != 'true' }}
+      uses: actions/setup-java@v1
+      with:
+        java-version: 8
+    - name: Checkout repository
+      if: ${{ steps.cache.outputs.cache-hit != 'true' }}
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        fetch-depth: 0
+    - name: Adjust files to be built on CI
+      if: ${{ steps.cache.outputs.cache-hit != 'true' }}
+      run: |
+        sed -i 's/-all\.zip/-bin.zip/' gradle/wrapper/gradle-wrapper.properties
+    - name: Build
+      if: ${{ steps.cache.outputs.cache-hit != 'true' }}
+      env:
+        GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.workers.max=4 -Dorg.gradle.warning.mode=all -Dsun.net.client.defaultConnectTimeout=15000 -Dsun.net.client.defaultReadTimeout=600000 -Dsun.io.useCanonCaches=false -Djava.awt.headless=true -Dorg.gradle.internal.launcher.welcomeMessageEnabled=false
+      run: |
+        ./gradlew help
+
   build:
-    needs: retrieve-gradle-versions
+    needs:
+    - retrieve-gradle-versions
+    - configure-cache
     name: Build & publish
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -47,10 +83,14 @@ jobs:
       with:
         submodules: recursive
         fetch-depth: 0
+
+    - name: Adjust files to be built on CI
+      run: |
+        sed -i 's/-all\.zip/-bin.zip/' gradle/wrapper/gradle-wrapper.properties
+
     - name: Build
       env:
         GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.workers.max=4 -Dorg.gradle.warning.mode=all -Dsun.net.client.defaultConnectTimeout=15000 -Dsun.net.client.defaultReadTimeout=600000 -Dsun.io.useCanonCaches=false -Djava.awt.headless=true -Dorg.gradle.internal.launcher.welcomeMessageEnabled=false
       run: |
         echo "Build for Gradle ${{ matrix.gradle-versions }}"
-        sed -i 's/-all\.zip/-bin.zip/' gradle/wrapper/gradle-wrapper.properties
         ./gradlew help "-Pgradle-version=${{ matrix.gradle-versions }}"
