@@ -28,7 +28,6 @@ tasks.withType(CollectGradleApiInfo) {
 
 apply plugin: 'idea'
 apply plugin: 'org.jetbrains.gradle.plugin.idea-ext'
-apply plugin: 'name.remal.idea-settings'
 
 idea {
     project {

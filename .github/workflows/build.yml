@@ -12,9 +12,6 @@ defaults:
   run:
     shell: bash
 
-env:
-  GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.workers.max=4 -Dorg.gradle.warning.mode=all -Dsun.net.client.defaultConnectTimeout=15000 -Dsun.net.client.defaultReadTimeout=600000 -Dsun.io.useCanonCaches=false -Djava.awt.headless=true -Dorg.gradle.internal.launcher.welcomeMessageEnabled=false
-
 jobs:
   retrieve-gradle-versions:
     if: ${{ !startsWith(github.event.head_commit.message, '[skip ci]') && !startsWith(github.event.head_commit.message, '[push-back]') }}
@@ -28,13 +25,16 @@ jobs:
       id: retrieve-gradle-versions
       uses: remal-github-actions/retrieve-gradle-versions@v1
       with:
-        min: 2.6
+        min: 6
+        #min: 2.6
 
   build:
     needs: retrieve-gradle-versions
+    name: Build & publish
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
+      max-parallel: 2
       matrix:
         gradle-versions: ${{ fromJSON(needs.retrieve-gradle-versions.outputs.gradle-versions) }}
     steps:
@@ -48,6 +48,8 @@ jobs:
         submodules: recursive
         fetch-depth: 0
     - name: Build
+      env:
+        GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.workers.max=4 -Dorg.gradle.warning.mode=all -Dsun.net.client.defaultConnectTimeout=15000 -Dsun.net.client.defaultReadTimeout=600000 -Dsun.io.useCanonCaches=false -Djava.awt.headless=true -Dorg.gradle.internal.launcher.welcomeMessageEnabled=false
       run: |
         echo "Build for Gradle ${{ matrix.gradle-versions }}"
         sed -i 's/-all\.zip/-bin.zip/' gradle/wrapper/gradle-wrapper.properties
