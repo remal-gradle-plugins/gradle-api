@@ -70,10 +70,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
-      max-parallel: 2
+      max-parallel: 5
       matrix:
         gradle-versions: ${{ fromJSON(needs.retrieve-gradle-versions.outputs.gradle-versions) }}
     steps:
+    - name: Cache
+      id: cache
+      uses: actions/cache@v2
+      with:
+        key: ${{ runner.os }}-gradle-${{ hashFiles('gradle/**', '**/*.gradle') }}
+        path: |
+          ~/.gradle
     - name: Setup Java 11
       uses: actions/setup-java@v1
       with:

@@ -5,6 +5,7 @@ gradle.beforeProject { project ->
             mavenCentral()
             gradlePluginPortal()
         }
+
         dependencies {
         }
     }
