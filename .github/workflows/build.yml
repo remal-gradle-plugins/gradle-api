@@ -78,10 +78,8 @@ jobs:
       run: |
         if [ "${{ steps.filter-gradle-versions.outcome }}" == "success" ]; then
           echo "::set-output name=result::$FILTER_OUTPUT"
-          echo "filter: $FILTER_OUTPUT"
         else
           echo "::set-output name=result::$SELECT_OUTPUT"
-          echo "select: $SELECT_OUTPUT"
         fi
 
 
@@ -162,8 +160,6 @@ jobs:
       env:
         PUBLISH_USER: ${{ github.actor }}
         PUBLISH_PASSWORD: ${{ secrets.WRITE_PACKAGES_TOKEN }}
-      if: ${{ false && env.PUBLISH_PASSWORD }}
       run: |
         echo "Publish for Gradle ${{ matrix.gradle-versions }}"
-        sed -i 's/-all\.zip/-bin.zip/' gradle/wrapper/gradle-wrapper.properties
         ./gradlew publishAllPublicationsToGitHubRepository "-Pgradle-version=${{ matrix.gradle-versions }}"
