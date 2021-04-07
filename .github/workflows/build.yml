@@ -34,8 +34,10 @@ jobs:
 
     - name: Select Gradle versions
       id: select-gradle-versions
+      env:
+        VERSIONS: ${{ steps.retrieve-gradle-versions.outputs.allAndRC }}
       run: |
-        echo "::set-output name=result::${{ steps.retrieve-gradle-versions.outputs.allAndRC }}"
+        echo "::set-output name=result::$VERSIONS"
 
     - name: Retrieve Maven artifact versions
       id: retrieve-maven-artifact-versions
