@@ -26,25 +26,20 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
         return "gradleApi"
     }
 
-    private static final Pattern DEPENDENCY_NAME = Pattern.compile(/(.+)-(\d+(?:\.\d+)*)(?:-([^.]+))?\.([^.]+)/)
+    private static final Pattern KOTLIN_DEPENDENCY_NAME = Pattern.compile(/(kotlin-.+?)-(\d+.*)\.([^.]+)/)
+    private static final Pattern DEPENDENCY_NAME = Pattern.compile(/(.+?)-(\d+(?:\.\d+)*)(?:-([^.]+))?\.([^.]+)/)
 
     private static final Map<String, String> ARTIFACT_ID_GROUP = [
-        'ant'               : 'org.apache.ant',
-        'ant-antlr'         : 'org.apache.ant',
-        'ant-launcher'      : 'org.apache.ant',
-        'ant-junit'         : 'org.apache.ant',
-        'javax.inject'      : 'javax.inject',
-        'jsr305'            : 'com.google.code.findbugs',
-        'kotlin-stdlib'     : 'org.jetbrains.kotlin',
-        'kotlin-stdlib-jdk7': 'org.jetbrains.kotlin',
-        'kotlin-stdlib-jdk8': 'org.jetbrains.kotlin',
-        'kotlin-stdlib-jre7': 'org.jetbrains.kotlin',
-        'kotlin-stdlib-jre8': 'org.jetbrains.kotlin',
-        'kotlin-reflect'    : 'org.jetbrains.kotlin',
-        'slf4j-api'         : 'org.slf4j',
-        'jcl-over-slf4j'    : 'org.slf4j',
-        'jul-to-slf4j'      : 'org.slf4j',
-        'log4j-over-slf4j'  : 'org.slf4j',
+        'ant'             : 'org.apache.ant',
+        'ant-antlr'       : 'org.apache.ant',
+        'ant-launcher'    : 'org.apache.ant',
+        'ant-junit'       : 'org.apache.ant',
+        'javax.inject'    : 'javax.inject',
+        'jsr305'          : 'com.google.code.findbugs',
+        'slf4j-api'       : 'org.slf4j',
+        'jcl-over-slf4j'  : 'org.slf4j',
+        'jul-to-slf4j'    : 'org.slf4j',
+        'log4j-over-slf4j': 'org.slf4j',
     ]
 
     @Override
@@ -106,12 +101,29 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
             }
             libFileResourceNames.removeAll { !classLoaderFilter.isResourceAllowed(it) }
             if (!libFileResourceNames.isEmpty()) {
+                Matcher kotlinMatcher = KOTLIN_DEPENDENCY_NAME.matcher(libFile.name)
                 Matcher matcher = DEPENDENCY_NAME.matcher(libFile.name)
-                if (matcher.matches()) {
+                if (kotlinMatcher.matches()) {
+                    String group = 'org.jetbrains.kotlin'
+                    String artifactId = kotlinMatcher.group(1)
+                    String version = kotlinMatcher.group(2)
+                        .replaceFirst(/-dev-.*/, '')
+                    String type = kotlinMatcher.group(3)
+                    pom.apiDependencies.add(
+                        newMavenDependency(
+                            group,
+                            artifactId,
+                            version,
+                            null,
+                            type
+                        )
+                    )
+
+                } else if (matcher.matches()) {
                     String artifactId = matcher.group(1)
                     String group = ARTIFACT_ID_GROUP[artifactId]
                     if (group == null) {
-                        throw new IllegalStateException("Group can't be found for ${libFile.name}")
+                        throw new IllegalStateException("Group can't be found for ${libFile.name} (artifactId=${artifactId})")
                     }
 
                     String version = matcher.group(2)
@@ -189,10 +201,15 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
         }
 
         // Has Kotlin dependencies
-        assert resolvedModuleComponentIdentifiers.any {
-            return "${it.group}:${it.module}" == 'org.jetbrains.kotlin:kotlin-stdlib'
+        if (compareVersions(gradleApiVersion, '3.2') >= 0) {
+            assert resolvedModuleComponentIdentifiers.any {
+                return "${it.group}:${it.module}" == 'org.jetbrains.kotlin:kotlin-stdlib'
+            }
+            assert resolvedModuleComponentIdentifiers.any {
+                return "${it.group}:${it.module}" == 'org.jetbrains.kotlin:kotlin-reflect'
+            }
         }
-        if (compareVersions(gradleApiVersion, '2.0') >= 0) {
+        if (compareVersions(gradleApiVersion, '4.4') >= 0) {
             assert resolvedModuleComponentIdentifiers.any {
                 boolean isJdk7 = "${it.group}:${it.module}" == 'org.jetbrains.kotlin:kotlin-stdlib-jdk7'
                 isJdk7 |= "${it.group}:${it.module}" == 'org.jetbrains.kotlin:kotlin-stdlib-jre7'
@@ -202,9 +219,6 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
                 boolean isJdk8 = "${it.group}:${it.module}" == 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
                 isJdk8 |= "${it.group}:${it.module}" == 'org.jetbrains.kotlin:kotlin-stdlib-jre8'
                 return isJdk8
-            }
-            assert resolvedModuleComponentIdentifiers.any {
-                return "${it.group}:${it.module}" == 'org.jetbrains.kotlin:kotlin-reflect'
             }
         }
 

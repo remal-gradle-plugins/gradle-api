@@ -11,7 +11,7 @@ on:
       min:
         required: false
         description: Min Gradle version
-        default: '2.6'
+        default: '3.0'
       max:
         required: false
         description: Max Gradle version
@@ -40,7 +40,7 @@ jobs:
         if [ "$EVENT_INPUT_MIN" != "" ]; then
           echo "::set-output name=result::$EVENT_INPUT_MIN"
         else
-          echo "::set-output name=result::2.6"
+          echo "::set-output name=result::3.0"
         fi
 
     - name: Retrieve Gradle versions
@@ -157,8 +157,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
-      fail-fast: false
-      max-parallel: 5
+      fail-fast: true
+      max-parallel: 1
       matrix:
         gradle-version: ${{ fromJSON(needs.retrieve-gradle-versions.outputs.gradle-versions) }}
     steps:

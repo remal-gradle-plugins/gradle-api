@@ -7,6 +7,7 @@ import static org.gradle.util.GUtil.loadProperties
 import build.BaseGradleApiTask
 import java.util.regex.Pattern
 import javax.annotation.Nullable
+import org.gradle.api.GradleException
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
@@ -19,6 +20,9 @@ import org.gradle.util.GradleVersion
 
 @CacheableTask
 class CollectGradleApiInfo extends BaseGradleApiTask {
+
+    static final MIN_SUPPORTED_VERSION = GradleVersion.version('3.0')
+
 
     @OutputFile
     File getInfoJsonFile() {
@@ -84,6 +88,10 @@ class CollectGradleApiInfo extends BaseGradleApiTask {
     @TaskAction
     void execute() {
         println "Collecting Gradle API info for version ${version}"
+
+        if (GradleVersion.version(version) < MIN_SUPPORTED_VERSION) {
+            throw new GradleException("Gradle ${version} is not supported. Min version: ${MIN_SUPPORTED_VERSION}.")
+        }
 
         File outputJsonFile = this.infoJsonFile
         if (outputJsonFile.isFile()) {
