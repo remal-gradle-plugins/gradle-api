@@ -63,11 +63,12 @@ jobs:
       with:
         script: |
           const { GRADLE_VERSIONS_JSON, MAVEN_ARTIFACT_VERSIONS_JSON } = process.env
-          const gradleVersions = JSON.parse(GRADLE_VERSIONS_JSON || '[]')
-          const mavenArtifactVersions = JSON.parse(MAVEN_ARTIFACT_VERSIONS_JSON || '[]')
+          const gradleVersions = JSON.parse(GRADLE_VERSIONS_JSON)
+          const mavenArtifactVersions = JSON.parse(MAVEN_ARTIFACT_VERSIONS_JSON)
           mavenArtifactVersions.forEach(version => {
             const index = gradleVersions.indexOf(version)
             if (index >= 0) {
+              echo `Version ${version} has already been published`
               gradleVersions.splice(index, 1)
             }
           })
@@ -75,11 +76,16 @@ jobs:
 
     - name: Create output
       id: output
+      env:
+        FILTER_OUTPUT: ${{ steps.filter-gradle-versions.outputs.result }}
+        SELECT_OUTPUT: ${{ steps.select-gradle-versions.outputs.result }}
       run: |
         if [ "${{ steps.filter-gradle-versions.outcome }}" == "success" ]; then
-          echo "::set-output name=result::${{ steps.filter-gradle-versions.outputs.result }}"
+          echo "::set-output name=result::$FILTER_OUTPUT"
+          echo "filter: $FILTER_OUTPUT"
         else
-          echo "::set-output name=result::${{ steps.select-gradle-versions.outputs.result }}"
+          echo "::set-output name=result::$SELECT_OUTPUT"
+          echo "select: $SELECT_OUTPUT"
         fi
 
 
