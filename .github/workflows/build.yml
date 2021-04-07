@@ -54,7 +54,7 @@ jobs:
       uses: actions/github-script@v3
       if: ${{ steps.retrieve-maven-artifact-versions.outcome == 'success' }}
       env:
-        GRADLE_VERSIONS_JSON: ${{ steps.select-gradle-versions.outputs.versions }}
+        GRADLE_VERSIONS_JSON: ${{ steps.select-gradle-versions.outputs.result }}
         MAVEN_ARTIFACT_VERSIONS_JSON: ${{ steps.retrieve-maven-artifact-versions.outputs.unstable }}
       with:
         script: |
