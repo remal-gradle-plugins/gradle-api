@@ -72,7 +72,7 @@ jobs:
           mavenArtifactVersions.forEach(version => {
             const index = gradleVersions.indexOf(version)
             if (index >= 0) {
-              echo `Version ${version} has already been published`
+              core.info(`Version ${version} has already been published`)
               gradleVersions.splice(index, 1)
             }
           })
