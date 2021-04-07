@@ -35,7 +35,7 @@ jobs:
     - name: Select Gradle versions
       id: select-gradle-versions
       run: |
-        echo "::set-output name=versions::${{ steps.retrieve-gradle-versions.outputs.allAndRC }}"
+        echo "::set-output name=result::${{ steps.retrieve-gradle-versions.outputs.allAndRC }}"
 
     - name: Retrieve Maven artifact versions
       id: retrieve-maven-artifact-versions
@@ -77,7 +77,7 @@ jobs:
         if [ "${{ steps.filter-gradle-versions.outcome }}" == "success" ]; then
           echo "::set-output name=versions::${{ steps.filter-gradle-versions.outputs.result }}"
         else
-          echo "::set-output name=versions::${{ steps.select-gradle-versions.outputs.versions }}"
+          echo "::set-output name=versions::${{ steps.select-gradle-versions.outputs.result }}"
         fi
 
 
