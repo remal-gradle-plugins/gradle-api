@@ -134,6 +134,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
+      fail-fast: false
       max-parallel: 5
       matrix:
         gradle-version: ${{ fromJSON(needs.retrieve-gradle-versions.outputs.gradle-versions) }}
