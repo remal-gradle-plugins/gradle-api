@@ -36,7 +36,7 @@ jobs:
       id: retrieve-gradle-versions
       uses: remal-github-actions/retrieve-gradle-versions@v1
       with:
-        min: 6.8.3
+        min: 5
         #min: '${{ github.event.inputs.min }}'
         #max: '${{ github.event.inputs.max }}'
 
