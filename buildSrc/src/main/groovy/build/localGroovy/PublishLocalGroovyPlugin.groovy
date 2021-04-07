@@ -34,14 +34,15 @@ class PublishLocalGroovyPlugin extends BasePublishPlugin {
             String name = localGroovyFile.name
 
             boolean matches = false
-            matches = matches || Pattern.compile(/groovy-all-(\d+(?:\.\d+)*)\.jar/).with { pattern ->
+            matches = matches || Pattern.compile(/(groovy(?:-[^-]+)?)-(\d+(?:\.\d+)*)\.jar/).with { pattern ->
                 Matcher matcher = pattern.matcher(name)
                 if (matcher.matches()) {
-                    String version = matcher.group(1)
+                    String artifactId = matcher.group(1)
+                    String version = matcher.group(2)
                     pom.apiDependencies.add(
                         newMavenDependency(
                             'org.codehaus.groovy',
-                            'groovy-all',
+                            artifactId,
                             version
                         ) {
                             it.excludeRules.add(newExcludeRule('*', '*'))
@@ -88,6 +89,23 @@ class PublishLocalGroovyPlugin extends BasePublishPlugin {
                 return false
             }
 
+            matches = matches || Pattern.compile(/(javaparser-core)-(\d+(?:\.\d+)*)\.jar/).with { pattern ->
+                Matcher matcher = pattern.matcher(name)
+                if (matcher.matches()) {
+                    String artifactId = matcher.group(1)
+                    String version = matcher.group(2)
+                    pom.apiDependencies.add(
+                        newMavenDependency(
+                            'com.github.javaparser',
+                            artifactId,
+                            version
+                        )
+                    )
+                    return true
+                }
+                return false
+            }
+
             if (!matches) {
                 throw new IllegalStateException("Unsupported library file: $localGroovyFile")
             }
@@ -112,9 +130,15 @@ class PublishLocalGroovyPlugin extends BasePublishPlugin {
             return isGroovy
         }
 
-        // Doesn't have non-Groovy dependencies
-        assert !resolvedModuleComponentIdentifiers.any {
-            return it.group != 'org.codehaus.groovy'
+        // Has only expected dependencies
+        assert resolvedModuleComponentIdentifiers.every {
+            boolean isExpected = it.group == 'org.codehaus.groovy'
+            if (compareVersions(gradleApiVersion, '7') >= 0
+                && compareVersions(gradleApiVersion, '7.0') < 0
+            ) {
+                isExpected |= "${it.group}:${it.module}" == 'com.github.javaparser:javaparser-core'
+            }
+            return isExpected
         }
 
         // Has expected classes

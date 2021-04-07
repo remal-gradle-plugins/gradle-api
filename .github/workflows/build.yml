@@ -36,9 +36,8 @@ jobs:
       id: retrieve-gradle-versions
       uses: remal-github-actions/retrieve-gradle-versions@v1
       with:
-        min: 5
-        #min: '${{ github.event.inputs.min }}'
-        #max: '${{ github.event.inputs.max }}'
+        min: '${{ github.event.inputs.min }}'
+        max: '${{ github.event.inputs.max }}'
 
     - name: Select Gradle versions
       id: select-gradle-versions

@@ -30,7 +30,9 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
 
     private static final Map<String, String> ARTIFACT_ID_GROUP = [
         'ant'               : 'org.apache.ant',
+        'ant-antlr'         : 'org.apache.ant',
         'ant-launcher'      : 'org.apache.ant',
+        'ant-junit'         : 'org.apache.ant',
         'javax.inject'      : 'javax.inject',
         'jsr305'            : 'com.google.code.findbugs',
         'kotlin-stdlib'     : 'org.jetbrains.kotlin',
@@ -70,10 +72,19 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
 
 
         List<File> libFiles = this.libFiles.findAll { libDependencies.contains(it.name) }
-
         libFiles.addAll(this.libFiles.findAll { it.name.startsWith('kotlin-') })
-
         libFiles.unique().sort()
+
+        List<File> localGroovyFiles = gradleApiInfo.localGroovyFiles
+            ?.collect { stringToFile(it) }
+            ?.findAll { doesPathStartWith(it, gradleHomeDir) }
+            ?: []
+        libFiles.removeIf {
+            boolean isLocalGroovy = localGroovyFiles.contains(it)
+            isLocalGroovy |= it.name.startsWith('groovy-')
+            return isLocalGroovy
+        }
+
         libFiles.removeIf {
             boolean isKotlinInternals = it.name.startsWith('kotlin-compiler-')
             isKotlinInternals |= it.name.startsWith('kotlin-sam-')

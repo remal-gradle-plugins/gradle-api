@@ -140,13 +140,11 @@ abstract class BasePublishPlugin extends BaseProjectPlugin {
                     publication.version = this.gradleApiVersion
 
                     publication.pom { MavenPomInternal pom ->
-                        dependencyPublications.collect { dependencyPublication ->
-                            pom.apiDependencies.add(
-                                newMavenDependency(
-                                    dependencyPublication.groupId,
-                                    dependencyPublication.artifactId,
-                                    dependencyPublication.version
-                                )
+                        List<MavenDependencyInternal> dependencyApiDependencies = dependencyPublications.collect { dependencyPublication ->
+                            newMavenDependency(
+                                dependencyPublication.groupId,
+                                dependencyPublication.artifactId,
+                                dependencyPublication.version
                             )
                         }
 
@@ -154,6 +152,12 @@ abstract class BasePublishPlugin extends BaseProjectPlugin {
                             disablePublication(publication)
                             return
                         }
+
+                        List<MavenDependencyInternal> apiDependencies = new ArrayList<>(pom.apiDependencies)
+                        apiDependencies.sort { dep1, dep2 -> "${dep1.groupId}:${dep1.artifactId}" <=> "${dep2.groupId}:${dep2.artifactId}" }
+                        pom.apiDependencies.clear()
+                        pom.apiDependencies.addAll(dependencyApiDependencies)
+                        pom.apiDependencies.addAll(apiDependencies)
 
                         if (configureClassesJar(classesJar) != ConfigurationResult.PUBLISH) {
                             disableTask(classesJar)
