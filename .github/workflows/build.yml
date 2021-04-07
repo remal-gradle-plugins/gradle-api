@@ -136,7 +136,7 @@ jobs:
     strategy:
       max-parallel: 5
       matrix:
-        gradle-versions: ${{ fromJSON(needs.retrieve-gradle-versions.outputs.gradle-versions) }}
+        gradle-version: ${{ fromJSON(needs.retrieve-gradle-versions.outputs.gradle-versions) }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
@@ -160,14 +160,25 @@ jobs:
 
     - name: Build
       run: |
-        echo "Build for Gradle ${{ matrix.gradle-versions }}"
+        echo "Build for Gradle ${{ matrix.gradle-version }}"
         sed -i 's/-all\.zip/-bin.zip/' gradle/wrapper/gradle-wrapper.properties
-        ./gradlew publishToMavenLocal "-Pgradle-version=${{ matrix.gradle-versions }}"
+        ./gradlew publishToMavenLocal "-Pgradle-version=${{ matrix.gradle-version }}"
+
+    - name: Retrieve Maven artifact versions
+      id: retrieve-maven-artifact-versions
+      uses: remal-github-actions/retrieve-maven-artifact-versions@v1
+      with:
+        group: name.remal.gradle-api
+        name: gradle-api
+        repository: https://maven.pkg.github.com/remal-gradle-api/packages
+        user: ${{ github.actor }}
+        password: ${{ github.token }}
 
     - name: Publish
+      if: ${{ !contains(fromJSON(steps.retrieve-maven-artifact-versions.outputs.unstable), matrix.gradle-version) }}
       env:
         PUBLISH_USER: ${{ github.actor }}
         PUBLISH_PASSWORD: ${{ secrets.WRITE_PACKAGES_TOKEN }}
       run: |
-        echo "Publish for Gradle ${{ matrix.gradle-versions }}"
-        ./gradlew publishAllPublicationsToGitHubRepository "-Pgradle-version=${{ matrix.gradle-versions }}"
+        echo "Publish for Gradle ${{ matrix.gradle-version }}"
+        ./gradlew publishAllPublicationsToGitHubRepository "-Pgradle-version=${{ matrix.gradle-version }}"
