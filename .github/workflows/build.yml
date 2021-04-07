@@ -42,7 +42,6 @@ jobs:
     - name: Retrieve Maven artifact versions
       id: retrieve-maven-artifact-versions
       uses: remal-github-actions/retrieve-maven-artifact-versions@v1
-      if: ${{ env.PUBLISH_PASSWORD }}
       with:
         group: name.remal.gradle-api
         name: gradle-api
