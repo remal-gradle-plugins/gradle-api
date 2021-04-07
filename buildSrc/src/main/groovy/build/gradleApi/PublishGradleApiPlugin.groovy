@@ -194,10 +194,14 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
         }
         if (compareVersions(gradleApiVersion, '2.0') >= 0) {
             assert resolvedModuleComponentIdentifiers.any {
-                return "${it.group}:${it.module}" == 'org.jetbrains.kotlin:kotlin-stdlib-jdk7'
+                boolean isJdk7 = "${it.group}:${it.module}" == 'org.jetbrains.kotlin:kotlin-stdlib-jdk7'
+                isJdk7 |= "${it.group}:${it.module}" == 'org.jetbrains.kotlin:kotlin-stdlib-jre7'
+                return isJdk7
             }
             assert resolvedModuleComponentIdentifiers.any {
-                return "${it.group}:${it.module}" == 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+                boolean isJdk8 = "${it.group}:${it.module}" == 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+                isJdk8 |= "${it.group}:${it.module}" == 'org.jetbrains.kotlin:kotlin-stdlib-jre8'
+                return isJdk8
             }
             assert resolvedModuleComponentIdentifiers.any {
                 return "${it.group}:${it.module}" == 'org.jetbrains.kotlin:kotlin-reflect'

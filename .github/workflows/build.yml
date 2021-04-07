@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      gradle-versions: ${{ steps.output.outputs.result }}
+      gradle-versions: ${{ steps.reverse-gradle-versions.outputs.result }}
     steps:
     - name: Define min Gradle version
       id: min-version
@@ -99,6 +99,19 @@ jobs:
         else
           echo "::set-output name=result::$SELECT_OUTPUT"
         fi
+
+    - name: Reverse Gradle versions
+      id: reverse-gradle-versions
+      uses: actions/github-script@v3
+      if: ${{ steps.retrieve-maven-artifact-versions.outcome == 'success' }}
+      env:
+        GRADLE_VERSIONS_JSON: ${{ steps.output.outputs.result }}
+      with:
+        script: |
+          const { GRADLE_VERSIONS_JSON } = process.env
+          const gradleVersions = JSON.parse(GRADLE_VERSIONS_JSON)
+          gradleVersions.reverse()
+          return gradleVersions
 
 
   populate-cache:
