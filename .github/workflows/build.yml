@@ -6,7 +6,15 @@ on:
     - main
   schedule:
   - cron: '43 5 * * *'
-  workflow_dispatch: { }
+  workflow_dispatch:
+    inputs:
+      min:
+        required: false
+        description: Min Gradle version
+        default: '2.6'
+      max:
+        required: false
+        description: Max Gradle version
 
 defaults:
   run:
@@ -28,9 +36,9 @@ jobs:
       id: retrieve-gradle-versions
       uses: remal-github-actions/retrieve-gradle-versions@v1
       with:
-        max: 6.8.4
         min: 6.8.3
-        #min: 2.6
+        #min: '${{ github.event.inputs.min }}'
+        #max: '${{ github.event.inputs.max }}'
 
     - name: Select Gradle versions
       id: select-gradle-versions
