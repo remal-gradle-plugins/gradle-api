@@ -38,6 +38,8 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
         'kotlin-stdlib'     : 'org.jetbrains.kotlin',
         'kotlin-stdlib-jdk7': 'org.jetbrains.kotlin',
         'kotlin-stdlib-jdk8': 'org.jetbrains.kotlin',
+        'kotlin-stdlib-jre7': 'org.jetbrains.kotlin',
+        'kotlin-stdlib-jre8': 'org.jetbrains.kotlin',
         'kotlin-reflect'    : 'org.jetbrains.kotlin',
         'slf4j-api'         : 'org.slf4j',
         'jcl-over-slf4j'    : 'org.slf4j',
