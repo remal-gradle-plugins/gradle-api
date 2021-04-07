@@ -18,11 +18,11 @@ env:
 jobs:
   retrieve-gradle-versions:
     if: ${{ !startsWith(github.event.head_commit.message, '[skip ci]') && !startsWith(github.event.head_commit.message, '[push-back]') }}
-    name: Retrieve Gradle versions
+    name: Retrieve Gradle versions to publish
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      gradle-versions: ${{ steps.retrieve-gradle-versions.outputs.allAndRC }}
+      gradle-versions: ${{ steps.output.outputs.result }}
     steps:
     - name: Retrieve Gradle versions
       id: retrieve-gradle-versions
@@ -63,8 +63,8 @@ jobs:
       with:
         script: |
           const { GRADLE_VERSIONS_JSON, MAVEN_ARTIFACT_VERSIONS_JSON } = process.env
-          const gradleVersions = JSON.parse(GRADLE_VERSIONS_JSON)
-          const mavenArtifactVersions = JSON.parse(MAVEN_ARTIFACT_VERSIONS_JSON)
+          const gradleVersions = JSON.parse(GRADLE_VERSIONS_JSON || '[]')
+          const mavenArtifactVersions = JSON.parse(MAVEN_ARTIFACT_VERSIONS_JSON || '[]')
           mavenArtifactVersions.forEach(version => {
             const index = gradleVersions.indexOf(version)
             if (index >= 0) {
@@ -77,9 +77,9 @@ jobs:
       id: output
       run: |
         if [ "${{ steps.filter-gradle-versions.outcome }}" == "success" ]; then
-          echo "::set-output name=versions::${{ steps.filter-gradle-versions.outputs.result }}"
+          echo "::set-output name=result::${{ steps.filter-gradle-versions.outputs.result }}"
         else
-          echo "::set-output name=versions::${{ steps.select-gradle-versions.outputs.result }}"
+          echo "::set-output name=result::${{ steps.select-gradle-versions.outputs.result }}"
         fi
 
 
