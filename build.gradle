@@ -26,6 +26,21 @@ tasks.withType(CollectGradleApiInfo) {
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
+publishing {
+    repositories {
+        maven {
+            name = 'GitHub'
+            url = 'https://maven.pkg.github.com/remal-gradle-api/packages'
+            credentials {
+                username = System.getenv('PUBLISH_USER')
+                password = System.getenv('PUBLISH_PASSWORD')
+            }
+        }
+    }
+}
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
 apply plugin: 'idea'
 apply plugin: 'org.jetbrains.gradle.plugin.idea-ext'
 

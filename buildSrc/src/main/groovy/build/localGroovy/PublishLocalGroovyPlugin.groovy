@@ -1,6 +1,7 @@
 package build.localGroovy
 
 import build.BasePublishPlugin
+import build.ZipUtils
 import groovy.transform.CompileStatic
 import groovy.transform.TypeCheckingMode
 import java.util.regex.Matcher
@@ -106,15 +107,22 @@ class PublishLocalGroovyPlugin extends BasePublishPlugin {
 
         // Has 'groovy' or 'groovy-all' dependencies
         assert resolvedModuleComponentIdentifiers.any {
-            return (it.group == 'org.codehaus.groovy'
-                && (it.module == 'groovy' || it.module == 'groovy-all')
-            )
+            boolean isGroovy = it.group == 'org.codehaus.groovy'
+            isGroovy &= it.module == 'groovy' || it.module == 'groovy-all'
+            return isGroovy
         }
 
         // Doesn't have non-Groovy dependencies
         assert !resolvedModuleComponentIdentifiers.any {
             return it.group != 'org.codehaus.groovy'
         }
+
+        // Has expected classes
+        Set<String> zipsEntryNames = ZipUtils.getZipsEntryNames(configuration)
+        assert zipsEntryNames.contains('groovy/lang/Closure.class')
+        assert zipsEntryNames.contains('groovy/lang/GString.class')
+        assert zipsEntryNames.contains('groovy/json/JsonOutput.class')
+        assert zipsEntryNames.contains('groovy/json/JsonSlurper.class')
     }
 
 }

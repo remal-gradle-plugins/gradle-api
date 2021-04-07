@@ -75,20 +75,21 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
 
         libFiles.unique().sort()
         libFiles.removeIf {
-            (it.name.startsWith('kotlin-compiler-')
-                || it.name.startsWith('kotlin-sam-')
-                || it.name.startsWith('kotlin-script-')
-            )
+            boolean isKotlinInternals = it.name.startsWith('kotlin-compiler-')
+            isKotlinInternals |= it.name.startsWith('kotlin-sam-')
+            isKotlinInternals |= it.name.startsWith('kotlin-script-')
+            isKotlinInternals |= it.name.startsWith('kotlin-scripting-')
+            return isKotlinInternals
         }
 
 
         ClassLoaderFilter classLoaderFilter = this.classLoaderFilter
         for (File libFile : libFiles) {
-            List<String> libFileResourceNames = ZipUtils.getZipEntryNames(libFile).findAll {
-                (it.endsWith('.class')
-                    || it.startsWith('META-INF/services/')
-                    || it.startsWith('META-INF/groovy/')
-                )
+            Set<String> libFileResourceNames = ZipUtils.getZipEntryNames(libFile).findAll {
+                boolean isValidResource = it.endsWith('.class')
+                isValidResource |= it.startsWith('META-INF/services/')
+                isValidResource |= it.startsWith('META-INF/groovy/')
+                return isValidResource
             }
             libFileResourceNames.removeAll { !classLoaderFilter.isResourceAllowed(it) }
             if (!libFileResourceNames.isEmpty()) {
@@ -189,6 +190,59 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
                 return "${it.group}:${it.module}" == 'org.jetbrains.kotlin:kotlin-reflect'
             }
         }
+
+        // Has expected classes
+        Set<String> zipsEntryNames = ZipUtils.getZipsEntryNames(configuration)
+        assert zipsEntryNames.contains('org/gradle/api/Action.class')
+        assert zipsEntryNames.contains('org/gradle/api/DefaultTask.class')
+        assert zipsEntryNames.contains('org/gradle/api/JavaVersion.class')
+        assert zipsEntryNames.contains('org/gradle/api/Plugin.class')
+        assert zipsEntryNames.contains('org/gradle/api/Project.class')
+        assert zipsEntryNames.contains('org/gradle/api/Task.class')
+        assert zipsEntryNames.contains('org/gradle/api/artifacts/Configuration.class')
+        if (compareVersions(gradleApiVersion, '3.3') >= 0) {
+            assert zipsEntryNames.contains('org/gradle/api/attributes/Attribute.class')
+        }
+        if (compareVersions(gradleApiVersion, '3.4') >= 0) {
+            assert zipsEntryNames.contains('org/gradle/api/attributes/Usage.class')
+        }
+        assert zipsEntryNames.contains('org/gradle/api/artifacts/Dependency.class')
+        if (compareVersions(gradleApiVersion, '4.7') >= 0) {
+            assert zipsEntryNames.contains('org/gradle/api/capabilities/Capability.class')
+        }
+        assert zipsEntryNames.contains('org/gradle/api/file/CopySpec.class')
+        assert zipsEntryNames.contains('org/gradle/api/file/FileTree.class')
+        assert zipsEntryNames.contains('org/gradle/api/initialization/Settings.class')
+        assert zipsEntryNames.contains('org/gradle/api/invocation/Gradle.class')
+        assert zipsEntryNames.contains('org/gradle/api/logging/Logger.class')
+        assert zipsEntryNames.contains('org/gradle/api/plugins/ApplicationPlugin.class')
+        assert zipsEntryNames.contains('org/gradle/api/plugins/GroovyPlugin.class')
+        assert zipsEntryNames.contains('org/gradle/api/plugins/JavaPlugin.class')
+        assert zipsEntryNames.contains('org/gradle/api/plugins/quality/CheckstylePlugin.class')
+        if (compareVersions(gradleApiVersion, '4.0') >= 0) {
+            assert zipsEntryNames.contains('org/gradle/api/provider/Provider.class')
+        }
+        if (compareVersions(gradleApiVersion, '4.3') >= 0) {
+            assert zipsEntryNames.contains('org/gradle/api/provider/Property.class')
+        }
+        assert zipsEntryNames.contains('org/gradle/api/publish/Publication.class')
+        assert zipsEntryNames.contains('org/gradle/api/publish/maven/MavenArtifact.class')
+        assert zipsEntryNames.contains('org/gradle/api/publish/maven/MavenPublication.class')
+        assert zipsEntryNames.contains('org/gradle/api/publish/maven/plugins/MavenPublishPlugin.class')
+        assert zipsEntryNames.contains('org/gradle/api/reporting/Report.class')
+        if (compareVersions(gradleApiVersion, '6.1') >= 0) {
+            assert zipsEntryNames.contains('org/gradle/api/services/BuildService.class')
+        }
+        assert zipsEntryNames.contains('org/gradle/api/specs/Spec.class')
+        assert zipsEntryNames.contains('org/gradle/api/tasks/Copy.class')
+        assert zipsEntryNames.contains('org/gradle/api/tasks/Delete.class')
+        assert zipsEntryNames.contains('org/gradle/api/tasks/Exec.class')
+        assert zipsEntryNames.contains('org/gradle/api/tasks/compile/AbstractCompile.class')
+        assert zipsEntryNames.contains('org/gradle/api/tasks/compile/GroovyCompile.class')
+        assert zipsEntryNames.contains('org/gradle/api/tasks/compile/JavaCompile.class')
+        assert zipsEntryNames.contains('org/gradle/api/tasks/bundling/Jar.class')
+        assert zipsEntryNames.contains('org/gradle/api/tasks/bundling/Zip.class')
+        assert zipsEntryNames.contains('org/gradle/api/tasks/testing/Test.class')
     }
 
 

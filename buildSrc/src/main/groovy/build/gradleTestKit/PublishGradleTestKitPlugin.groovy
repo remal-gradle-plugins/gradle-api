@@ -2,6 +2,7 @@ package build.gradleTestKit
 
 import build.BasePublishPlugin
 import build.ClassesJar
+import build.ZipUtils
 import build.gradleApi.PublishGradleApiPlugin
 import groovy.transform.CompileStatic
 import groovy.transform.TypeCheckingMode
@@ -40,6 +41,10 @@ class PublishGradleTestKitPlugin extends BasePublishPlugin {
     @Override
     protected void validatePublished(Configuration configuration) {
         configuration.resolve()
+
+        // Has expected classes
+        Set<String> zipsEntryNames = ZipUtils.getZipsEntryNames(configuration)
+        assert zipsEntryNames.contains('org/gradle/testkit/runner/GradleRunner.class')
     }
 
 }

@@ -12,6 +12,9 @@ defaults:
   run:
     shell: bash
 
+env:
+  GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.workers.max=4 -Dorg.gradle.warning.mode=all -Dsun.net.client.defaultConnectTimeout=15000 -Dsun.net.client.defaultReadTimeout=600000 -Dsun.io.useCanonCaches=false -Djava.awt.headless=true -Dorg.gradle.internal.launcher.welcomeMessageEnabled=false
+
 jobs:
   retrieve-gradle-versions:
     if: ${{ !startsWith(github.event.head_commit.message, '[skip ci]') && !startsWith(github.event.head_commit.message, '[push-back]') }}
@@ -19,14 +22,64 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      gradle-versions: ${{ steps.retrieve-gradle-versions.outputs.all }}
+      gradle-versions: ${{ steps.retrieve-gradle-versions.outputs.allAndRC }}
     steps:
     - name: Retrieve Gradle versions
       id: retrieve-gradle-versions
       uses: remal-github-actions/retrieve-gradle-versions@v1
       with:
-        min: 6.8
+        max: 6.8.4
+        min: 6.8.3
         #min: 2.6
+
+    - name: Select Gradle versions
+      id: select-gradle-versions
+      run: |
+        echo "::set-output name=versions::${{ steps.retrieve-gradle-versions.outputs.allAndRC }}"
+
+    - name: Retrieve Maven artifact versions
+      id: retrieve-maven-artifact-versions
+      uses: remal-github-actions/retrieve-maven-artifact-versions@v1
+      env:
+        PUBLISH_USER: ${{ github.actor }}
+        PUBLISH_PASSWORD: ${{ secrets.WRITE_PACKAGES_TOKEN }}
+      if: ${{ env.PUBLISH_PASSWORD }}
+      with:
+        group: name.remal.gradle-api
+        name: gradle-api
+        repository: https://maven.pkg.github.com/remal-gradle-api/packages
+        user: ${{ env.PUBLISH_USER }}
+        password: ${{ env.PUBLISH_PASSWORD }}
+
+    - name: Filter Gradle versions
+      id: filter-gradle-versions
+      uses: actions/github-script@v3
+      if: ${{ steps.retrieve-maven-artifact-versions.outcome == 'success' }}
+      env:
+        GRADLE_VERSIONS_JSON: ${{ steps.select-gradle-versions.outputs.versions }}
+        MAVEN_ARTIFACT_VERSIONS_JSON: ${{ steps.retrieve-maven-artifact-versions.outputs.unstable }}
+      with:
+        script: |
+          const { GRADLE_VERSIONS_JSON, MAVEN_ARTIFACT_VERSIONS_JSON } = process.env
+          const gradleVersions = JSON.parse(GRADLE_VERSIONS_JSON)
+          const mavenArtifactVersions = JSON.parse(MAVEN_ARTIFACT_VERSIONS_JSON)
+          mavenArtifactVersions.forEach(version => {
+            const index = gradleVersions.indexOf(version)
+            if (index >= 0) {
+              gradleVersions.splice(index, 1)
+            }
+          })
+          return gradleVersions
+
+    - name: Create output
+      id: output
+      run: |
+        if [ "${{ steps.filter-gradle-versions.outcome }}" == "success" ]; then
+          echo "::set-output name=versions::${{ steps.filter-gradle-versions.outputs.result }}"
+        else
+          echo "::set-output name=versions::${{ steps.select-gradle-versions.outputs.versions }}"
+        fi
+
 
   populate-cache:
     name: Populate cache
@@ -49,17 +102,19 @@ jobs:
 
     - name: Setup Java 11
       if: ${{ steps.cache.outputs.cache-hit != 'true' }}
-      uses: actions/setup-java@v1
+      uses: actions/setup-java@v2
       with:
         java-version: 8
+        distribution: zulu
 
-    - name: Build
+    - name: Create cache content
       if: ${{ steps.cache.outputs.cache-hit != 'true' }}
       env:
         GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.workers.max=4 -Dorg.gradle.warning.mode=all -Dsun.net.client.defaultConnectTimeout=15000 -Dsun.net.client.defaultReadTimeout=600000 -Dsun.io.useCanonCaches=false -Djava.awt.headless=true -Dorg.gradle.internal.launcher.welcomeMessageEnabled=false
       run: |
         sed -i 's/-all\.zip/-bin.zip/' gradle/wrapper/gradle-wrapper.properties
         ./gradlew help
+
 
   build:
     needs:
@@ -88,14 +143,23 @@ jobs:
           ~/.gradle
 
     - name: Setup Java 11
-      uses: actions/setup-java@v1
+      uses: actions/setup-java@v2
       with:
         java-version: 8
+        distribution: zulu
 
     - name: Build
-      env:
-        GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true -Dorg.gradle.workers.max=4 -Dorg.gradle.warning.mode=all -Dsun.net.client.defaultConnectTimeout=15000 -Dsun.net.client.defaultReadTimeout=600000 -Dsun.io.useCanonCaches=false -Djava.awt.headless=true -Dorg.gradle.internal.launcher.welcomeMessageEnabled=false
       run: |
         echo "Build for Gradle ${{ matrix.gradle-versions }}"
         sed -i 's/-all\.zip/-bin.zip/' gradle/wrapper/gradle-wrapper.properties
-        ./gradlew help "-Pgradle-version=${{ matrix.gradle-versions }}"
+        ./gradlew publishToMavenLocal "-Pgradle-version=${{ matrix.gradle-versions }}"
+
+    - name: Publish
+      env:
+        PUBLISH_USER: ${{ github.actor }}
+        PUBLISH_PASSWORD: ${{ secrets.WRITE_PACKAGES_TOKEN }}
+      if: ${{ false && env.PUBLISH_PASSWORD }}
+      run: |
+        echo "Publish for Gradle ${{ matrix.gradle-versions }}"
+        sed -i 's/-all\.zip/-bin.zip/' gradle/wrapper/gradle-wrapper.properties
+        ./gradlew publishAllPublicationsToGitHubRepository "-Pgradle-version=${{ matrix.gradle-versions }}"
