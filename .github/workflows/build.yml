@@ -42,16 +42,13 @@ jobs:
     - name: Retrieve Maven artifact versions
       id: retrieve-maven-artifact-versions
       uses: remal-github-actions/retrieve-maven-artifact-versions@v1
-      env:
-        PUBLISH_USER: ${{ github.actor }}
-        PUBLISH_PASSWORD: ${{ secrets.WRITE_PACKAGES_TOKEN }}
       if: ${{ env.PUBLISH_PASSWORD }}
       with:
         group: name.remal.gradle-api
         name: gradle-api
         repository: https://maven.pkg.github.com/remal-gradle-api/packages
-        user: ${{ env.PUBLISH_USER }}
-        password: ${{ env.PUBLISH_PASSWORD }}
+        user: ${{ github.actor }}
+        password: ${{ github.token }}
 
     - name: Filter Gradle versions
       id: filter-gradle-versions
