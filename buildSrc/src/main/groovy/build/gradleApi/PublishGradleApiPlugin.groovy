@@ -107,14 +107,10 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
                     String group = 'org.jetbrains.kotlin'
                     String artifactId = kotlinMatcher.group(1)
                     String version = kotlinMatcher.group(2)
-                    if (compareVersions(gradleApiVersion, '3.2') >= 0
-                        && compareVersions(gradleApiVersion, '3.3') < 0
-                    ) {
+                    if (isVersionInRange('3.2', gradleApiVersion, '3.2.9999')) {
                         version = version.replaceFirst(/-dev-\d+$/, '')
                     }
-                    if (compareVersions(gradleApiVersion, '3.3') >= 0
-                        && compareVersions(gradleApiVersion, '3.4') < 0
-                    ) {
+                    if (isVersionInRange('3.3', gradleApiVersion, '3.4.9999')) {
                         version = version.replaceFirst(/-M\d+$/, '')
                         if (version.matches(/^\d+\.\d+$/)) {
                             version += '.0'

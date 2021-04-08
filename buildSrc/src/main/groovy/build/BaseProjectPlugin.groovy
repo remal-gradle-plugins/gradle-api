@@ -113,6 +113,15 @@ abstract class BaseProjectPlugin implements Plugin<Project> {
         return VERSION_COMPARATOR.compare(versioned1, versioned2)
     }
 
+    protected final isVersionInRange(CharSequence minVersion, CharSequence version, CharSequence maxVersion) {
+        if (compareVersions(minVersion, version) <= 0
+            && compareVersions(version, maxVersion) <= 0
+        ) {
+            return true
+        }
+        return false
+    }
+
 
     protected static <T> Spec<T> andSpecs(Spec<? super T>... specs) {
         return new NamedSpec<T>(specs.join(" and ")) {
