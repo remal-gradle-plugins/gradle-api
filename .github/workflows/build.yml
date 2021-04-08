@@ -105,6 +105,7 @@ jobs:
           }
           versions.reverse()
           if (!versions.length) {
+            core.info('No versions to publish')
             versions.push('') // versions array can't be ampty, as it causes 'build' stage to fail
           }
           return versions
