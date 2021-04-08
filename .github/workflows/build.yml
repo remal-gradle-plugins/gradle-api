@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      gradle-versions: ${{ steps.reverse-gradle-versions.outputs.result }}
+      gradle-versions: ${{ steps.create-output.outputs.result }}
     steps:
     - name: Define min Gradle version
       id: min-version
@@ -89,29 +89,25 @@ jobs:
           return gradleVersions
 
     - name: Create output
-      id: output
+      id: create-output
+      uses: actions/github-script@v3
       env:
         FILTER_OUTPUT: ${{ steps.filter-gradle-versions.outputs.result }}
         SELECT_OUTPUT: ${{ steps.select-gradle-versions.outputs.result }}
-      run: |
-        if [ "${{ steps.filter-gradle-versions.outcome }}" == "success" ]; then
-          echo "::set-output name=result::$FILTER_OUTPUT"
-        else
-          echo "::set-output name=result::$SELECT_OUTPUT"
-        fi
-
-    - name: Reverse Gradle versions
-      id: reverse-gradle-versions
-      uses: actions/github-script@v3
-      if: ${{ steps.retrieve-maven-artifact-versions.outcome == 'success' }}
-      env:
-        GRADLE_VERSIONS_JSON: ${{ steps.output.outputs.result }}
       with:
         script: |
-          const { GRADLE_VERSIONS_JSON } = process.env
-          const gradleVersions = JSON.parse(GRADLE_VERSIONS_JSON)
-          gradleVersions.reverse()
-          return gradleVersions
+          const { FILTER_OUTPUT, SELECT_OUTPUT } = process.env
+          let versions = []
+          if ('${{ steps.filter-gradle-versions.outcome }}' === 'success') {
+            versions = JSON.parse(FILTER_OUTPUT)
+          } else {
+            versions = JSON.parse(SELECT_OUTPUT)
+          }
+          versions.reverse()
+          if (!versions.length) {
+            versions.push('')
+          }
+          return versions
 
 
   populate-cache:
@@ -150,7 +146,6 @@ jobs:
 
 
   build:
-    if: ${{ needs.retrieve-gradle-versions.outputs.gradle-versions != '' }}
     needs:
     - retrieve-gradle-versions
     - populate-cache
@@ -162,8 +157,10 @@ jobs:
       max-parallel: 1
       matrix:
         gradle-version: ${{ fromJSON(needs.retrieve-gradle-versions.outputs.gradle-versions) }}
+        not-empty: [placeholder] # 'gradle-version' can be empty, so this allows not to fail the build
     steps:
     - name: Checkout repository
+      if: ${{ matrix.gradle-version != '' }}
       uses: actions/checkout@v2
       with:
         submodules: recursive
