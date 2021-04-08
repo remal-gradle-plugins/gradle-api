@@ -150,6 +150,7 @@ jobs:
 
 
   build:
+    if: ${{ needs.retrieve-gradle-versions.outputs.gradle-versions != '' }}
     needs:
     - retrieve-gradle-versions
     - populate-cache
