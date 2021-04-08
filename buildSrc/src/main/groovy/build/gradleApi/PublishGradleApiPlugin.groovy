@@ -107,7 +107,19 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
                     String group = 'org.jetbrains.kotlin'
                     String artifactId = kotlinMatcher.group(1)
                     String version = kotlinMatcher.group(2)
-                        .replaceFirst(/-dev-.*/, '')
+                    if (compareVersions(gradleApiVersion, '3.2') >= 0
+                        && compareVersions(gradleApiVersion, '3.3') < 0
+                    ) {
+                        version = version.replaceFirst(/-dev-\d+$/, '')
+                    }
+                    if (compareVersions(gradleApiVersion, '3.3') >= 0
+                        && compareVersions(gradleApiVersion, '3.4') < 0
+                    ) {
+                        version = version.replaceFirst(/-M\d+$/, '')
+                        if (version.matches(/^\d+\.\d+$/)) {
+                            version += '.0'
+                        }
+                    }
                     String type = kotlinMatcher.group(3)
                     pom.apiDependencies.add(
                         newMavenDependency(
