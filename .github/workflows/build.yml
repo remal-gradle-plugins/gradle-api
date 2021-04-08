@@ -146,6 +146,7 @@ jobs:
 
 
   build:
+    if: ${{ needs.retrieve-gradle-versions.outputs.gradle-versions != '[""]' }}
     needs:
     - retrieve-gradle-versions
     - populate-cache
@@ -157,10 +158,8 @@ jobs:
       max-parallel: 1
       matrix:
         gradle-version: ${{ fromJSON(needs.retrieve-gradle-versions.outputs.gradle-versions) }}
-        not-empty: [placeholder] # 'gradle-version' can be empty, so this allows not to fail the build
     steps:
     - name: Checkout repository
-      if: ${{ matrix.gradle-version != '' }}
       uses: actions/checkout@v2
       with:
         submodules: recursive
