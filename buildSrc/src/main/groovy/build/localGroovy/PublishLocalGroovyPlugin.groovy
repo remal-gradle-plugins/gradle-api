@@ -133,9 +133,7 @@ class PublishLocalGroovyPlugin extends BasePublishPlugin {
         // Has only expected dependencies
         assert resolvedModuleComponentIdentifiers.every {
             boolean isExpected = it.group == 'org.codehaus.groovy'
-            if (compareVersions(gradleApiVersion, '7') >= 0
-                && compareVersions(gradleApiVersion, '7.0') < 0
-            ) {
+            if (compareVersions('7', gradleApiVersion, '7.0.9999')) {
                 isExpected |= "${it.group}:${it.module}" == 'com.github.javaparser:javaparser-core'
             }
             return isExpected
