@@ -1,4 +1,21 @@
 {
   $schema: "https://docs.renovatebot.com/renovate-schema.json",
-  enabled: false, // Do not update this project dependencies at all
+  extends: ["github>remal/renovate-config:jre"],
+
+  semanticCommits: "disabled",
+
+  "git-submodules": {
+    enabled: false, // This is in beta for now, so let's use Dependabot to update Git submodules
+  },
+
+  'gradle-wrapper': {
+    major: {
+      description: ["Don't update Gradle major version"],
+      enabled: false,
+    },
+    minor: {
+      description: ["Don't update Gradle minor version"],
+      enabled: false,
+    }
+  }
 }
