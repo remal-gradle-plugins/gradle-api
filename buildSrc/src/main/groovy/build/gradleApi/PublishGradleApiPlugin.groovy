@@ -12,6 +12,7 @@ import java.util.stream.Collectors
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 import org.gradle.api.file.FileTreeElement
+import org.gradle.api.publish.maven.internal.dependencies.MavenDependencyInternal
 import org.gradle.api.publish.maven.internal.publication.MavenPomInternal
 
 class PublishGradleApiPlugin extends BasePublishPlugin {
@@ -138,15 +139,19 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
                     String classifier = matcher.group(3)
                     String type = matcher.group(4)
 
-                    pom.apiDependencies.add(
-                        newMavenDependency(
-                            group,
-                            artifactId,
-                            version,
-                            classifier,
-                            type
-                        )
+                    MavenDependencyInternal apiDependency = newMavenDependency(
+                        group,
+                        artifactId,
+                        version,
+                        classifier,
+                        type
                     )
+
+                    if (group == 'org.apache.ant') {
+                        apiDependency.excludeRules.add(newExcludeRule('*', '*'))
+                    }
+
+                    pom.apiDependencies.add(apiDependency)
 
                 } else {
                     throw new IllegalStateException("${libFile.name} doesn't match to $DEPENDENCY_NAME")
@@ -203,7 +208,7 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
             return "${it.group}:${it.module}" == 'javax.inject:javax.inject'
         }
 
-        // Has slf4j dependency
+        // Has Slf4j dependency
         assert resolvedModuleComponentIdentifiers.any {
             return "${it.group}:${it.module}" == 'org.slf4j:slf4j-api'
         }
@@ -228,6 +233,11 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
                 isJdk8 |= "${it.group}:${it.module}" == 'org.jetbrains.kotlin:kotlin-stdlib-jre8'
                 return isJdk8
             }
+        }
+
+        // Doesn't have junit dependencies:
+        assert !resolvedModuleComponentIdentifiers.any {
+            return it.group == 'org.junit.jupiter' || it.group == 'junit'
         }
 
         // Has expected classes
