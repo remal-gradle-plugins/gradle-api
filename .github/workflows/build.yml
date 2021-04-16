@@ -31,22 +31,11 @@ jobs:
     outputs:
       gradle-versions: ${{ steps.create-output.outputs.result }}
     steps:
-    - name: Define min Gradle version
-      id: min-version
-      env:
-        EVENT_INPUT_MIN: ${{ github.event.inputs.min }}
-      run: |
-        if [ "$EVENT_INPUT_MIN" != "" ]; then
-          echo "::set-output name=result::$EVENT_INPUT_MIN"
-        else
-          echo "::set-output name=result::3.0"
-        fi
-
     - name: Retrieve Gradle versions
       id: retrieve-gradle-versions
       uses: remal-github-actions/retrieve-gradle-versions@v1
       with:
-        min: '3.0, ${{ steps.min-version.outputs.result }}'
+        min: '3.0, ${{ github.event.inputs.min }}'
         max: '${{ github.event.inputs.max }}'
 
     - name: Select Gradle versions
