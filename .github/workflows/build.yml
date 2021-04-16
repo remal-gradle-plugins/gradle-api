@@ -11,7 +11,6 @@ on:
       min:
         required: false
         description: Min Gradle version
-        default: '3.0'
       max:
         required: false
         description: Max Gradle version
@@ -47,8 +46,8 @@ jobs:
       id: retrieve-gradle-versions
       uses: remal-github-actions/retrieve-gradle-versions@v1
       with:
-        min: ${{ steps.min-version.outputs.result }}
-        max: ${{ github.event.inputs.max }}
+        min: '3.0, ${{ steps.min-version.outputs.result }}'
+        max: '${{ github.event.inputs.max }}'
 
     - name: Select Gradle versions
       id: select-gradle-versions
