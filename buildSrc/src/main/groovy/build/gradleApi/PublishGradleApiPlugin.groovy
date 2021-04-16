@@ -147,9 +147,7 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
                         type
                     )
 
-                    if (group == 'org.apache.ant') {
-                        apiDependency.excludeRules.add(newExcludeRule('*', '*'))
-                    }
+                    apiDependency.excludeRules.add(newExcludeRule('*', '*'))
 
                     pom.apiDependencies.add(apiDependency)
 
