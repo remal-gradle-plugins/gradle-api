@@ -141,7 +141,7 @@ class PublishLocalGroovyPlugin extends BasePublishPlugin {
 
         // Doesn't have some specific Groovy dependencies
         assert !resolvedModuleComponentIdentifiers.any {
-            if (it.group != 'org.codehaus.groovy') return
+            if (it.group != 'org.codehaus.groovy') return false
             boolean isNotExpected = it.module == 'groovy-cli-picocli'
             isNotExpected |= it.module == 'groovy-docgenerator'
             isNotExpected |= it.module == 'groovy-groovysh'
