@@ -190,6 +190,7 @@ abstract class BasePublishPlugin extends BaseProjectPlugin {
 
             TaskProvider validateTask = tasks.register(getValidateTaskName(publication)) {
                 group = 'gradle-api'
+                outputs.upToDateWhen { false }
 
                 dependsOn(
                     dependencyPublications.collect { dependencyPublication ->

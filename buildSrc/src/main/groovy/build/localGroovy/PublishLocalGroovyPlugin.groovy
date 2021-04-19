@@ -139,6 +139,23 @@ class PublishLocalGroovyPlugin extends BasePublishPlugin {
             return isExpected
         }
 
+        // Doesn't have some specific Groovy dependencies
+        assert !resolvedModuleComponentIdentifiers.any {
+            if (it.group != 'org.codehaus.groovy') return
+            boolean isNotExpected = it.module == 'groovy-cli-picocli'
+            isNotExpected |= it.module == 'groovy-docgenerator'
+            isNotExpected |= it.module == 'groovy-groovysh'
+            isNotExpected |= it.module == 'groovy-jmx'
+            isNotExpected |= it.module == 'groovy-jmx'
+            isNotExpected |= it.module == 'groovy-jsr223'
+            isNotExpected |= it.module == 'groovy-macro'
+            isNotExpected |= it.module == 'groovy-servlet'
+            isNotExpected |= it.module == 'groovy-swing'
+            isNotExpected |= it.module == 'groovy-test-junit5'
+            isNotExpected |= it.module == 'groovy-testng'
+            return isNotExpected
+        }
+
         // Has expected classes
         Set<String> zipsEntryNames = ZipUtils.getZipsEntryNames(configuration)
         assert zipsEntryNames.contains('groovy/lang/Closure.class')
