@@ -70,7 +70,7 @@ allprojects {
                     'org.jacoco:org.jacoco.agent:0.8.6',
 
                     // Checkstyle
-                    'com.puppycrawl.tools:checkstyle:8.41.1',
+                    'com.puppycrawl.tools:checkstyle:8.42',
                 ].collect { project.dependencies.constraints.create(it) }
             )
 
