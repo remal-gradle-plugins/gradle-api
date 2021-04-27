@@ -189,6 +189,7 @@ abstract class BasePublishPlugin extends BaseProjectPlugin {
 
 
             TaskProvider validateTask = tasks.register(getValidateTaskName(publication)) {
+
                 group = 'gradle-api'
                 outputs.upToDateWhen { false }
 
@@ -209,6 +210,10 @@ abstract class BasePublishPlugin extends BaseProjectPlugin {
                     didWork = true
                 }
             }
+
+            Task validateAllPublications = project.tasks.maybeCreate('validateAllPublications')
+            validateAllPublications.group = 'gradle-api'
+            validateAllPublications.dependsOn(validateTask)
 
             makeTasksFinalizedByOther(isPublishToMavenLocalTaskOf(publication), validateTask)
 

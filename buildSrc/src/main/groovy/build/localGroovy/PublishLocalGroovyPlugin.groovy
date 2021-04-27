@@ -63,16 +63,20 @@ class PublishLocalGroovyPlugin extends BasePublishPlugin {
                             'groovy-all',
                             version
                         ) {
+                            it.excludeRules.add(newExcludeRule('org.codehaus.groovy', 'groovy-cli-picocli'))
+                            it.excludeRules.add(newExcludeRule('org.codehaus.groovy', 'groovy-docgenerator'))
+                            it.excludeRules.add(newExcludeRule('org.codehaus.groovy', 'groovy-groovysh'))
+                            it.excludeRules.add(newExcludeRule('org.codehaus.groovy', 'groovy-jmx'))
+                            it.excludeRules.add(newExcludeRule('org.codehaus.groovy', 'groovy-jsr223'))
                             it.excludeRules.add(newExcludeRule('org.codehaus.groovy', 'groovy-macro'))
+                            it.excludeRules.add(newExcludeRule('org.codehaus.groovy', 'groovy-servlet'))
+                            it.excludeRules.add(newExcludeRule('org.codehaus.groovy', 'groovy-swing'))
+                            it.excludeRules.add(newExcludeRule('org.codehaus.groovy', 'groovy-testng'))
                             it.excludeRules.add(newExcludeRule('org.apache.ant', '*'))
                             it.excludeRules.add(newExcludeRule('commons-cli', '*'))
-                            it.excludeRules.add(newExcludeRule('info.picocli', '*'))
-                            it.excludeRules.add(newExcludeRule('com.thoughtworks.qdox', '*'))
-                            it.excludeRules.add(newExcludeRule('jline', '*'))
                             it.excludeRules.add(newExcludeRule('junit', '*'))
                             it.excludeRules.add(newExcludeRule('org.junit.jupiter', '*'))
                             it.excludeRules.add(newExcludeRule('org.junit.platform', '*'))
-                            it.excludeRules.add(newExcludeRule('org.testng', '*'))
                         }
                     )
                     if (compareVersions(version, '2.5') >= 0) {
@@ -146,12 +150,10 @@ class PublishLocalGroovyPlugin extends BasePublishPlugin {
             isNotExpected |= it.module == 'groovy-docgenerator'
             isNotExpected |= it.module == 'groovy-groovysh'
             isNotExpected |= it.module == 'groovy-jmx'
-            isNotExpected |= it.module == 'groovy-jmx'
             isNotExpected |= it.module == 'groovy-jsr223'
             isNotExpected |= it.module == 'groovy-macro'
             isNotExpected |= it.module == 'groovy-servlet'
             isNotExpected |= it.module == 'groovy-swing'
-            isNotExpected |= it.module == 'groovy-test-junit5'
             isNotExpected |= it.module == 'groovy-testng'
             return isNotExpected
         }
