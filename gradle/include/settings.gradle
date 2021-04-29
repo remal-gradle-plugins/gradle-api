@@ -1,0 +1,26 @@
+gradle.beforeProject { project ->
+    if (project.parent != null) return
+    project.buildscript {
+        repositories {
+            mavenCentral()
+            gradlePluginPortal()
+        }
+
+        dependencies {
+        }
+    }
+}
+
+gradle.beforeProject { project ->
+    File rootDir = project.rootDir
+    if (rootDir.name == 'buildSrc') {
+        rootDir = rootDir.parentFile
+    }
+
+    project.tasks.withType(GroovyCompile).configureEach {
+        it.groovyOptions.with {
+            it.parameters = true
+            it.configurationScript = project.file("$rootDir/compiler-config.groovy")
+        }
+    }
+}

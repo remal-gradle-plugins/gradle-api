@@ -102,6 +102,11 @@
     </writeAnnotations>
   </component>
   <component name="FrameworkDetectionExcludesConfiguration">
+    <type id="AngularCLI" />
+    <type id="hibernate" />
+    <type id="javaeeApplication" />
+    <type id="jpa" />
+    <type id="Spring" />
     <type id="web" />
   </component>
   <component name="NullableNotNullManager">
@@ -155,5 +160,5 @@
       </value>
     </option>
   </component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_8" default="false" project-jdk-name="11" project-jdk-type="JavaSDK" />
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_1_8" default="true" project-jdk-name="1.8" project-jdk-type="JavaSDK" />
 </project>
