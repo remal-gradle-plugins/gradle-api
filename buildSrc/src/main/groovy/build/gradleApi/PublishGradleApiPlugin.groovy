@@ -172,11 +172,6 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
             classesJar.from(project.zipTree(gradleApiFile))
         }
 
-
-        // Exclusions:
-        classesJar.exclude('org/gradle/internal/impldep/**')
-        classesJar.exclude('com/sun/xml/bind/**')
-
         // Exclude all libs:
         Set<String> libFileEntries = libFiles.stream()
             .flatMap { file -> ZipUtils.getZipEntryNames(file).stream() }
@@ -184,6 +179,9 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
         classesJar.exclude { FileTreeElement element ->
             if (!element.directory) {
                 String relativePath = element.relativePath.toString()
+                if (relativePath.startsWith("net/rubygrapefruit/platform/")) {
+                    return false;
+                }
                 return libFileEntries.contains(relativePath)
             }
             return false
@@ -290,6 +288,7 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
         assert zipsEntryNames.contains('org/gradle/api/tasks/bundling/Jar.class')
         assert zipsEntryNames.contains('org/gradle/api/tasks/bundling/Zip.class')
         assert zipsEntryNames.contains('org/gradle/api/tasks/testing/Test.class')
+        assert zipsEntryNames.contains('net/rubygrapefruit/platform/Native.class')
     }
 
 
