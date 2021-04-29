@@ -4,7 +4,7 @@ Gradle API artifacts for plugins development.
 
 ## Usage
 
-The artifacts are published to [a separate GitHub organisation](https://github.com/orgs/remal-gradle-api/packages), as it allows to republish them by recreating the organisation. It is very unlikely that this will happen, however, it mitigates risks of broken artifacts publishing.
+The artifacts are published to [a separate GitHub organisation](https://github.com/orgs/remal-gradle-api/packages), as it allows to republish them by recreating the organisation. It is unlikely that this will happen, however, it mitigates risks of broken artifacts publishing.
 
 ### Register repository
 
@@ -101,10 +101,6 @@ Published artifacts MUST follow native Gradle separation of `localGroovy`, `grad
 `gradleApi` dependency MUST provide `localGroovy` as a transitive dependency.
 
 `gradleTestKit` dependency MUST provide `gradleApi` as a transitive dependency.
-
-### SHOULD remove Gradle shadowed dependencies
-
-Generated Gradle API JAR has some shadowed dependencies (`org.gradle.internal.impldep.**`). Such classes SHOULD be considered as internal-only and, thus, excluded from published artifacts.
 
 ### SHOULD include external dependencies as transitive dependencies
 
