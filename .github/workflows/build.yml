@@ -33,7 +33,7 @@ jobs:
     steps:
     - name: Retrieve Gradle versions
       id: retrieve-gradle-versions
-      uses: remal-github-actions/retrieve-gradle-versions@v1
+      uses: remal-github-actions/retrieve-gradle-versions@9002d3aaf2521b52dc270d919f6c268f09e68796 # renovate: tag=v1
       with:
         min: '3.0, ${{ github.event.inputs.min }}'
         max: '${{ github.event.inputs.max }}'
@@ -47,7 +47,7 @@ jobs:
 
     - name: Retrieve Maven artifact versions
       id: retrieve-maven-artifact-versions
-      uses: remal-github-actions/retrieve-maven-artifact-versions@v1
+      uses: remal-github-actions/retrieve-maven-artifact-versions@0d842ec2c61f85c672ba69728c4ff6b4eccf123b # renovate: tag=v1
       with:
         group: name.remal.gradle-api
         name: gradle-api
@@ -57,7 +57,7 @@ jobs:
 
     - name: Filter Gradle versions
       id: filter-gradle-versions
-      uses: actions/github-script@v5
+      uses: actions/github-script@441359b1a30438de65712c2fbca0abe4816fa667 # renovate: tag=v5
       if: ${{ steps.retrieve-maven-artifact-versions.outcome == 'success' }}
       env:
         GRADLE_VERSIONS_JSON: ${{ steps.select-gradle-versions.outputs.result }}
@@ -78,7 +78,7 @@ jobs:
 
     - name: Create output
       id: create-output
-      uses: actions/github-script@v5
+      uses: actions/github-script@441359b1a30438de65712c2fbca0abe4816fa667 # renovate: tag=v5
       env:
         FILTER_OUTPUT: ${{ steps.filter-gradle-versions.outputs.result }}
         SELECT_OUTPUT: ${{ steps.select-gradle-versions.outputs.result }}
@@ -105,14 +105,14 @@ jobs:
     timeout-minutes: 15
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579 # renovate: tag=v2
       with:
         submodules: recursive
         fetch-depth: 0
 
     - name: Cache
       id: cache
-      uses: actions/cache@v2
+      uses: actions/cache@937d24475381cd9c75ae6db12cb4e79714b926ed # renovate: tag=v2
       with:
         key: ${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/**', '**/*.gradle') }}
         path: |
@@ -120,7 +120,7 @@ jobs:
 
     - name: Setup Java 8
       if: ${{ steps.cache.outputs.cache-hit != 'true' }}
-      uses: actions/setup-java@v2
+      uses: actions/setup-java@5f00602cd1b2819185d88dc7a1b1985f598c6705 # renovate: tag=v2
       with:
         java-version: 8
         distribution: zulu
@@ -149,21 +149,21 @@ jobs:
         gradle-version: ${{ fromJSON(needs.retrieve-gradle-versions.outputs.gradle-versions) }}
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@ec3a7ce113134d7a93b817d10a8272cb61118579 # renovate: tag=v2
       with:
         submodules: recursive
         fetch-depth: 0
 
     - name: Cache
       id: cache
-      uses: actions/cache@v2
+      uses: actions/cache@937d24475381cd9c75ae6db12cb4e79714b926ed # renovate: tag=v2
       with:
         key: ${{ runner.os }}-gradle-${{ hashFiles('gradle/**', '**/*.gradle') }}
         path: |
           ~/.gradle
 
     - name: Setup Java 8
-      uses: actions/setup-java@v2
+      uses: actions/setup-java@5f00602cd1b2819185d88dc7a1b1985f598c6705 # renovate: tag=v2
       with:
         java-version: 8
         distribution: zulu
@@ -176,7 +176,7 @@ jobs:
 
     - name: Retrieve Maven artifact versions
       id: retrieve-maven-artifact-versions
-      uses: remal-github-actions/retrieve-maven-artifact-versions@v1
+      uses: remal-github-actions/retrieve-maven-artifact-versions@0d842ec2c61f85c672ba69728c4ff6b4eccf123b # renovate: tag=v1
       with:
         group: name.remal.gradle-api
         name: gradle-api
