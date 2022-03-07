@@ -57,7 +57,7 @@ jobs:
 
     - name: Filter Gradle versions
       id: filter-gradle-versions
-      uses: actions/github-script@v5
+      uses: actions/github-script@v6
       if: ${{ steps.retrieve-maven-artifact-versions.outcome == 'success' }}
       env:
         GRADLE_VERSIONS_JSON: ${{ steps.select-gradle-versions.outputs.result }}
@@ -78,7 +78,7 @@ jobs:
 
     - name: Create output
       id: create-output
-      uses: actions/github-script@v5
+      uses: actions/github-script@v6
       env:
         FILTER_OUTPUT: ${{ steps.filter-gradle-versions.outputs.result }}
         SELECT_OUTPUT: ${{ steps.select-gradle-versions.outputs.result }}
