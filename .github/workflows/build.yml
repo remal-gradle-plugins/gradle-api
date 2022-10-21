@@ -4,6 +4,7 @@ on:
   push:
     branches:
     - main
+  pull_request: { }
   schedule:
   - cron: '17 2 * * *'
   workflow_dispatch:
@@ -185,7 +186,7 @@ jobs:
         password: ${{ github.token }}
 
     - name: Publish
-      if: ${{ !contains(fromJSON(steps.retrieve-maven-artifact-versions.outputs.unstable), matrix.gradle-version) }}
+      if: ${{ github.event_name != 'pull_request' && !contains(fromJSON(steps.retrieve-maven-artifact-versions.outputs.unstable), matrix.gradle-version) }}
       env:
         PUBLISH_USER: ${{ github.actor }}
         PUBLISH_PASSWORD: ${{ secrets.WRITE_PACKAGES_TOKEN }}
