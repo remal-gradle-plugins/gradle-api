@@ -26,7 +26,6 @@ env:
 jobs:
   retrieve-gradle-versions:
     if: ${{ !startsWith(github.event.head_commit.message, '[skip ci]') && !startsWith(github.event.head_commit.message, '[push-back]') }}
-    name: Retrieve Gradle versions to publish
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -101,7 +100,6 @@ jobs:
 
 
   populate-cache:
-    name: Populate cache
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -140,7 +138,6 @@ jobs:
     needs:
     - retrieve-gradle-versions
     - populate-cache
-    name: Build & publish
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
