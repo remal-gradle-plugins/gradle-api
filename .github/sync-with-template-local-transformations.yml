@@ -1,10 +1,11 @@
-- name: .github/workflows/build.yml
+- name: ignore-files
   format: text
   includes:
   - .github/workflows/build.yml
   ignore: true
-- name: .github/workflows/codeql-analysis.yml
+- name: delete-redundant-files
   format: text
   includes:
   - .github/workflows/codeql-analysis.yml
+  - .github/release-drafter.yml
   delete: true
