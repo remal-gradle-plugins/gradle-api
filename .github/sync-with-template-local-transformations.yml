@@ -3,3 +3,8 @@
   includes:
   - .github/workflows/build.yml
   ignore: true
+- name: .github/workflows/codeql-analysis.yml
+  format: text
+  includes:
+  - .github/workflows/codeql-analysis.yml
+  delete: true
