@@ -1,0 +1,5 @@
+- name: .github/workflows/build.yml
+  format: text
+  includes:
+  - .github/workflows/build.yml
+  ignore: true
