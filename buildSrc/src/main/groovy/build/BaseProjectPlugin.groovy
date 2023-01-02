@@ -114,12 +114,13 @@ abstract class BaseProjectPlugin implements Plugin<Project> {
     }
 
     protected final isVersionInRange(CharSequence minVersion, CharSequence version, CharSequence maxVersion) {
-        if (compareVersions(minVersion, version) <= 0
-            && compareVersions(version, maxVersion) <= 0
-        ) {
-            return true
+        if (minVersion != null && compareVersions(minVersion, version) > 0) {
+            return false
         }
-        return false
+        if (maxVersion != null && compareVersions(version, maxVersion) > 0) {
+            return false
+        }
+        return true
     }
 
 
