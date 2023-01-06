@@ -1,3 +1,7 @@
+repositories:
+- remal-gradle-plugins/gradle-api
+
+transformations:
 - name: ignore-files
   format: text
   includes:
