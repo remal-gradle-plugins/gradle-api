@@ -21,7 +21,7 @@ import org.gradle.util.GradleVersion
 @CacheableTask
 class CollectGradleApiInfo extends BaseGradleApiTask {
 
-    static final MIN_SUPPORTED_VERSION = GradleVersion.version('3.0')
+    static final GradleVersion MIN_SUPPORTED_VERSION = GradleVersion.version('3.0')
 
 
     @OutputFile
