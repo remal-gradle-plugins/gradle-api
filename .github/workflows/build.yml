@@ -79,7 +79,7 @@ jobs:
     - name: Filter Gradle versions
       id: filter-gradle-versions
       uses: actions/github-script@v6
-      if: ${{ steps.retrieve-maven-artifact-versions.outcome == 'success' }}
+      if: ${{ steps.retrieve-maven-artifact-versions-local-groovy.outcome == 'success' || steps.retrieve-maven-artifact-versions-gradle-api.outcome == 'success' || steps.retrieve-maven-artifact-versions-gradle-test-kit.outcome == 'success' }}
       env:
         GRADLE_VERSIONS_JSON: ${{ steps.select-gradle-versions.outputs.result }}
         LOCAL_GROOVY_MAVEN_ARTIFACT_VERSIONS_JSON: ${{ steps.retrieve-maven-artifact-versions-local-groovy.outputs.unstable }}
