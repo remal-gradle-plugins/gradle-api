@@ -99,7 +99,7 @@ jobs:
             if (!gradleTestKitMavenArtifactVersions.includes(version)) return
             const index = gradleVersions.indexOf(version)
             if (index >= 0) {
-              core.info(`Version ${version} has already been published`)
+              core.info(`Version ${version} has already been fully published`)
               gradleVersions.splice(index, 1)
             }
           })
