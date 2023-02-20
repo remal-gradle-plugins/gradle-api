@@ -6,7 +6,7 @@ on:
     - main
   pull_request: { }
   schedule:
-  - cron: '17 2 * * *'
+  - cron: '0 * * * *'
   workflow_dispatch:
     inputs:
       min:
