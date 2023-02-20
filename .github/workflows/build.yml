@@ -217,7 +217,7 @@ jobs:
       uses: remal-github-actions/retrieve-maven-artifact-versions@v1
       with:
         group: name.remal.gradle-api
-        name: local-groovy
+        name: gradle-test-kit
         repository: https://maven.pkg.github.com/remal-gradle-api/packages
         user: ${{ github.actor }}
         password: ${{ github.token }}
