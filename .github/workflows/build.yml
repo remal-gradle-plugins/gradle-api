@@ -95,7 +95,7 @@ jobs:
           const mavenArtifactVersions = localGroovyMavenArtifactVersions.concat(gradleApiMavenArtifactVersions).concat(gradleTestKitMavenArtifactVersions)
           mavenArtifactVersions.forEach(version => {
             if (!localGroovyMavenArtifactVersions.includes(version)) return
-            if (!gradleTestKitMavenArtifactVersions.includes(version)) return
+            if (!gradleApiMavenArtifactVersions.includes(version)) return
             if (!gradleTestKitMavenArtifactVersions.includes(version)) return
             const index = gradleVersions.indexOf(version)
             if (index >= 0) {
