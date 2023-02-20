@@ -44,7 +44,7 @@ jobs:
       env:
         VERSIONS: ${{ steps.retrieve-gradle-versions.outputs.allAndRC }}
       run: |
-        echo "::set-output name=result::$VERSIONS"
+        echo "result=$VERSIONS" >> $GITHUB_OUTPUT
 
     - name: Retrieve Maven artifact versions
       id: retrieve-maven-artifact-versions
