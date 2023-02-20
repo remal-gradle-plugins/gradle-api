@@ -175,7 +175,7 @@ jobs:
         sed -i 's/-all\.zip/-bin.zip/' gradle/wrapper/gradle-wrapper.properties
         ./gradlew publishToMavenLocal "-Pgradle-version=${{ matrix.gradle-version }}"
 
-    - name: Retrieve Maven artifact versions: Local Groovy
+    - name: Retrieve Maven artifact versions - Local Groovy
       id: retrieve-maven-artifact-versions-local-groovy
       uses: remal-github-actions/retrieve-maven-artifact-versions@v1
       with:
@@ -184,16 +184,16 @@ jobs:
         repository: https://maven.pkg.github.com/remal-gradle-api/packages
         user: ${{ github.actor }}
         password: ${{ github.token }}
-    - name: Publish: Local Groovy
+    - name: Publish - Local Groovy
       if: ${{ github.event_name != 'pull_request' && !contains(fromJSON(steps.retrieve-maven-artifact-versions-local-groovy.outputs.unstable), matrix.gradle-version) }}
       env:
         PUBLISH_USER: ${{ github.actor }}
         PUBLISH_PASSWORD: ${{ secrets.WRITE_PACKAGES_TOKEN }}
       run: |
-        echo "Publish for Gradle ${{ matrix.gradle-version }}: Local Groovy"
+        echo "Publish for Gradle ${{ matrix.gradle-version }} - Local Groovy"
         ./gradlew publishLocalGroovyPublicationToGitHubRepository "-Pgradle-version=${{ matrix.gradle-version }}"
 
-    - name: Retrieve Maven artifact versions: Gradle API
+    - name: Retrieve Maven artifact versions - Gradle API
       id: retrieve-maven-artifact-versions-gradle-api
       uses: remal-github-actions/retrieve-maven-artifact-versions@v1
       with:
@@ -202,16 +202,16 @@ jobs:
         repository: https://maven.pkg.github.com/remal-gradle-api/packages
         user: ${{ github.actor }}
         password: ${{ github.token }}
-    - name: Publish: Gradle API
+    - name: Publish - Gradle API
       if: ${{ github.event_name != 'pull_request' && !contains(fromJSON(steps.retrieve-maven-artifact-versions-gradle-api.outputs.unstable), matrix.gradle-version) }}
       env:
         PUBLISH_USER: ${{ github.actor }}
         PUBLISH_PASSWORD: ${{ secrets.WRITE_PACKAGES_TOKEN }}
       run: |
-        echo "Publish for Gradle ${{ matrix.gradle-version }}: Gradle API"
+        echo "Publish for Gradle ${{ matrix.gradle-version }} - Gradle API"
         ./gradlew publishGradleApiPublicationToGitHubRepository "-Pgradle-version=${{ matrix.gradle-version }}"
 
-    - name: Retrieve Maven artifact versions: Gradle Test Kit
+    - name: Retrieve Maven artifact versions - Gradle Test Kit
       id: retrieve-maven-artifact-versions-gradle-test-kit
       uses: remal-github-actions/retrieve-maven-artifact-versions@v1
       with:
@@ -220,11 +220,11 @@ jobs:
         repository: https://maven.pkg.github.com/remal-gradle-api/packages
         user: ${{ github.actor }}
         password: ${{ github.token }}
-    - name: Publish: Local Groovy
+    - name: Publish - Local Groovy
       if: ${{ github.event_name != 'pull_request' && !contains(fromJSON(steps.retrieve-maven-artifact-versions-gradle-test-kit.outputs.unstable), matrix.gradle-version) }}
       env:
         PUBLISH_USER: ${{ github.actor }}
         PUBLISH_PASSWORD: ${{ secrets.WRITE_PACKAGES_TOKEN }}
       run: |
-        echo "Publish for Gradle ${{ matrix.gradle-version }}: Gradle Test Kit"
+        echo "Publish for Gradle ${{ matrix.gradle-version }} - Gradle Test Kit"
         ./gradlew publishGradleTestKitPublicationToGitHubRepository "-Pgradle-version=${{ matrix.gradle-version }}"
