@@ -220,7 +220,7 @@ jobs:
         repository: https://maven.pkg.github.com/remal-gradle-api/packages
         user: ${{ github.actor }}
         password: ${{ github.token }}
-    - name: Publish - Local Groovy
+    - name: Publish - Gradle Test Kit
       if: ${{ github.event_name != 'pull_request' && !contains(fromJSON(steps.retrieve-maven-artifact-versions-gradle-test-kit.outputs.unstable), matrix.gradle-version) }}
       env:
         PUBLISH_USER: ${{ github.actor }}
