@@ -46,14 +46,32 @@ jobs:
       run: |
         echo "result=$VERSIONS" >> $GITHUB_OUTPUT
 
-    - name: Retrieve Maven artifact versions
-      id: retrieve-maven-artifact-versions
+    - name: Retrieve Maven artifact versions - Local Groovy
+      id: retrieve-maven-artifact-versions-local-groovy
       uses: remal-github-actions/retrieve-maven-artifact-versions@v1
       with:
         group: name.remal.gradle-api
-        #name: local-groovy
+        name: local-groovy
+        repository: https://maven.pkg.github.com/remal-gradle-api/packages
+        user: ${{ github.actor }}
+        password: ${{ github.token }}
+
+    - name: Retrieve Maven artifact versions - Gradle API
+      id: retrieve-maven-artifact-versions-gradle-api
+      uses: remal-github-actions/retrieve-maven-artifact-versions@v1
+      with:
+        group: name.remal.gradle-api
         name: gradle-api
-        #name: gradle-test-kit
+        repository: https://maven.pkg.github.com/remal-gradle-api/packages
+        user: ${{ github.actor }}
+        password: ${{ github.token }}
+
+    - name: Retrieve Maven artifact versions - Gradle Test Kit
+      id: retrieve-maven-artifact-versions-gradle-test-kit
+      uses: remal-github-actions/retrieve-maven-artifact-versions@v1
+      with:
+        group: name.remal.gradle-api
+        name: gradle-test-kit
         repository: https://maven.pkg.github.com/remal-gradle-api/packages
         user: ${{ github.actor }}
         password: ${{ github.token }}
@@ -64,13 +82,21 @@ jobs:
       if: ${{ steps.retrieve-maven-artifact-versions.outcome == 'success' }}
       env:
         GRADLE_VERSIONS_JSON: ${{ steps.select-gradle-versions.outputs.result }}
-        MAVEN_ARTIFACT_VERSIONS_JSON: ${{ steps.retrieve-maven-artifact-versions.outputs.unstable }}
+        LOCAL_GROOVY_MAVEN_ARTIFACT_VERSIONS_JSON: ${{ steps.retrieve-maven-artifact-versions-local-groovy.outputs.unstable }}
+        GRADLE_API_MAVEN_ARTIFACT_VERSIONS_JSON: ${{ steps.retrieve-maven-artifact-versions-gradle-api.outputs.unstable }}
+        GRADLE_TEST_KIT_MAVEN_ARTIFACT_VERSIONS_JSON: ${{ steps.retrieve-maven-artifact-versions-gradle-test-kit.outputs.unstable }}
       with:
         script: |
-          const { GRADLE_VERSIONS_JSON, MAVEN_ARTIFACT_VERSIONS_JSON } = process.env
+          const { GRADLE_VERSIONS_JSON, LOCAL_GROOVY_MAVEN_ARTIFACT_VERSIONS_JSON, GRADLE_API_MAVEN_ARTIFACT_VERSIONS_JSON, GRADLE_TEST_KIT_MAVEN_ARTIFACT_VERSIONS_JSON } = process.env
           const gradleVersions = JSON.parse(GRADLE_VERSIONS_JSON)
-          const mavenArtifactVersions = JSON.parse(MAVEN_ARTIFACT_VERSIONS_JSON)
+          const localGroovyMavenArtifactVersions = JSON.parse(LOCAL_GROOVY_MAVEN_ARTIFACT_VERSIONS_JSON)
+          const gradleApiMavenArtifactVersions = JSON.parse(GRADLE_API_MAVEN_ARTIFACT_VERSIONS_JSON)
+          const gradleTestKitMavenArtifactVersions = JSON.parse(GRADLE_TEST_KIT_MAVEN_ARTIFACT_VERSIONS_JSON)
+          const mavenArtifactVersions = localGroovyMavenArtifactVersions.concat(gradleApiMavenArtifactVersions).concat(gradleTestKitMavenArtifactVersions)
           mavenArtifactVersions.forEach(version => {
+            if (!localGroovyMavenArtifactVersions.includes(version)) return
+            if (!gradleTestKitMavenArtifactVersions.includes(version)) return
+            if (!gradleTestKitMavenArtifactVersions.includes(version)) return
             const index = gradleVersions.indexOf(version)
             if (index >= 0) {
               core.info(`Version ${version} has already been published`)
