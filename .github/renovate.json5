@@ -10,7 +10,7 @@
 
   "gradle-wrapper": {
     extends: [
-      "github>remal/renovate-config:disable-major-updates",
+      "github>remal/renovate-config:disable-minor-updates",
     ],
   },
 
