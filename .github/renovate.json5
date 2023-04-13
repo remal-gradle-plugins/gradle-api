@@ -7,12 +7,5 @@
   },
   
   // $$$sync-with-template-modifiable: local
-
-  "gradle-wrapper": {
-    extends: [
-      "github>remal/renovate-config:disable-minor-updates",
-    ],
-  },
-
   // $$$sync-with-template-modifiable-end$$$
 }
