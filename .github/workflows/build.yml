@@ -205,7 +205,6 @@ jobs:
           return 17
 
     - name: Setup Java ${{steps.select-java-version.outputs.result}}
-      if: ${{ steps.cache.outputs.cache-hit != 'true' }}
       uses: actions/setup-java@v4
       with:
         java-version: ${{steps.select-java-version.outputs.result}}
