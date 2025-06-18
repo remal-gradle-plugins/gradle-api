@@ -46,8 +46,8 @@ apply plugin: 'org.jetbrains.gradle.plugin.idea-ext'
 
 idea {
     project {
-        jdkName = '8'
-        targetBytecodeVersion = JavaVersion.VERSION_1_8
+        jdkName = '17'
+        targetBytecodeVersion = JavaVersion.VERSION_17
         languageLevel = new IdeaLanguageLevel(targetBytecodeVersion.majorVersion)
 
         settings {

@@ -1,5 +1,8 @@
 gradle.beforeProject { project ->
-    if (project.parent != null) return
+    if (project.parent != null) {
+        return
+    }
+
     project.buildscript {
         repositories {
             mavenCentral()

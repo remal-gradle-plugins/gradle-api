@@ -27,19 +27,23 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
         return "gradleApi"
     }
 
-    private static final Pattern KOTLIN_DEPENDENCY_NAME = Pattern.compile(/(kotlin-.+?)-(\d+.*)\.([^.]+)/)
-    private static final Pattern DEPENDENCY_NAME = Pattern.compile(/(.+?)-(\d+(?:\.\d+)*)(?:-([^.]+))?\.([^.]+)/)
+    private static final Pattern KOTLIN_DEPENDENCY_NAME =
+        Pattern.compile(/(kotlin-.+?)-(\d+.*)\.([^.]+)/)
+    private static final Pattern JSPECIFY_DEPENDENCY_NAME =
+        Pattern.compile(/(jspecify)-(\d+(?:\.\d+)*)(?:-([^.]+))?\.([^.]+)/)
+    private static final Pattern DEPENDENCY_NAME =
+        Pattern.compile(/(.+?)-(\d+(?:\.\d+)*)(?:-([^.]+))?\.([^.]+)/)
 
     private static final Map<String, String> ARTIFACT_ID_GROUP = [
-        'ant'             : 'org.apache.ant',
-        'ant-antlr'       : 'org.apache.ant',
-        'ant-launcher'    : 'org.apache.ant',
-        'ant-junit'       : 'org.apache.ant',
-        'javax.inject'    : 'javax.inject',
-        'jsr305'          : 'com.google.code.findbugs',
-        'slf4j-api'       : 'org.slf4j',
-        'jcl-over-slf4j'  : 'org.slf4j',
-        'jul-to-slf4j'    : 'org.slf4j',
+        'ant': 'org.apache.ant',
+        'ant-antlr': 'org.apache.ant',
+        'ant-launcher': 'org.apache.ant',
+        'ant-junit': 'org.apache.ant',
+        'javax.inject': 'javax.inject',
+        'jsr305': 'com.google.code.findbugs',
+        'slf4j-api': 'org.slf4j',
+        'jcl-over-slf4j': 'org.slf4j',
+        'jul-to-slf4j': 'org.slf4j',
         'log4j-over-slf4j': 'org.slf4j',
     ]
 
@@ -101,9 +105,8 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
                 return isValidResource
             }
             libFileResourceNames.removeAll { !classLoaderFilter.isResourceAllowed(it) }
-            if (!libFileResourceNames.isEmpty()) {
+            while (!libFileResourceNames.isEmpty()) {
                 Matcher kotlinMatcher = KOTLIN_DEPENDENCY_NAME.matcher(libFile.name)
-                Matcher matcher = DEPENDENCY_NAME.matcher(libFile.name)
                 if (kotlinMatcher.matches()) {
                     String group = 'org.jetbrains.kotlin'
                     String artifactId = kotlinMatcher.group(1)
@@ -128,16 +131,21 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
                         )
                     )
 
-                } else if (matcher.matches()) {
-                    String artifactId = matcher.group(1)
-                    String group = ARTIFACT_ID_GROUP[artifactId]
-                    if (group == null) {
-                        throw new IllegalStateException("Group can't be found for ${libFile.name} (artifactId=${artifactId})")
-                    }
+                    break
+                }
 
-                    String version = matcher.group(2)
-                    String classifier = matcher.group(3)
-                    String type = matcher.group(4)
+
+                Matcher jspecifyMatcher = JSPECIFY_DEPENDENCY_NAME.matcher(libFile.name)
+                if (jspecifyMatcher.matches()) {
+                    String group = 'org.jspecify'
+                    String artifactId = jspecifyMatcher.group(1)
+                    String version = jspecifyMatcher.group(2)
+                    String classifier = jspecifyMatcher.group(3)
+                    String type = jspecifyMatcher.group(4)
+
+                    if (classifier == 'no-module-annotation') {
+                        classifier = ''
+                    }
 
                     MavenDependencyInternal apiDependency = newMavenDependency(
                         group,
@@ -151,9 +159,38 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
 
                     pom.apiDependencies.add(apiDependency)
 
-                } else {
-                    throw new IllegalStateException("${libFile.name} doesn't match to $DEPENDENCY_NAME")
+                    break
                 }
+
+
+                Matcher dependencyMatcher = DEPENDENCY_NAME.matcher(libFile.name)
+                if (dependencyMatcher.matches()) {
+                    String artifactId = dependencyMatcher.group(1)
+                    String group = ARTIFACT_ID_GROUP[artifactId]
+                    if (group == null) {
+                        throw new IllegalStateException("Group can't be found for ${libFile.name} (artifactId=${artifactId})")
+                    }
+
+                    String version = dependencyMatcher.group(2)
+                    String classifier = dependencyMatcher.group(3)
+                    String type = dependencyMatcher.group(4)
+
+                    MavenDependencyInternal apiDependency = newMavenDependency(
+                        group,
+                        artifactId,
+                        version,
+                        classifier,
+                        type
+                    )
+
+                    apiDependency.excludeRules.add(newExcludeRule('*', '*'))
+
+                    pom.apiDependencies.add(apiDependency)
+                    break
+                }
+
+
+                throw new IllegalStateException("${libFile.name} doesn't match to $DEPENDENCY_NAME")
             }
         }
 
@@ -325,9 +362,11 @@ class PublishGradleApiPlugin extends BasePublishPlugin {
         def gradleApiInfo = this.gradleApiInfo
         def classLoaders = gradleApiInfo.classLoaders ?: []
         return new ClassLoaderFilter(
-            disallowedClassNames: classLoaders.collect { it.spec?.disallowedClassNames ?: [] }.flatten().unique().sort().toSet(),
+            disallowedClassNames: classLoaders
+                .collect { it.spec?.disallowedClassNames ?: [] }.flatten().unique().sort().toSet(),
             classNames: classLoaders.collect { it.spec?.classNames ?: [] }.flatten().unique().sort().toSet(),
-            disallowedPackagePrefixes: classLoaders.collect { it.spec?.disallowedPackagePrefixes ?: [] }.flatten().unique().sort(),
+            disallowedPackagePrefixes: classLoaders
+                .collect { it.spec?.disallowedPackagePrefixes ?: [] }.flatten().unique().sort(),
             packagePrefixes: classLoaders.collect { it.spec?.packagePrefixes ?: [] }.flatten().unique().sort(),
             packageNames: classLoaders.collect { it.spec?.packageNames ?: [] }.flatten().unique().sort().toSet(),
             resourceNames: classLoaders.collect { it.spec?.resourceNames ?: [] }.flatten().unique().sort().toSet(),

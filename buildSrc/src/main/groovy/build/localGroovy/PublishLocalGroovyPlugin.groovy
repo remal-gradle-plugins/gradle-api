@@ -39,9 +39,10 @@ class PublishLocalGroovyPlugin extends BasePublishPlugin {
                 if (matcher.matches()) {
                     String artifactId = matcher.group(1)
                     String version = matcher.group(2)
+                    String group = getGroovyGroup(version)
                     pom.apiDependencies.add(
                         newMavenDependency(
-                            'org.codehaus.groovy',
+                            group,
                             artifactId,
                             version
                         ) {
@@ -57,21 +58,22 @@ class PublishLocalGroovyPlugin extends BasePublishPlugin {
                 Matcher matcher = pattern.matcher(name)
                 if (matcher.matches()) {
                     String version = matcher.group(1)
+                    String group = getGroovyGroup(version)
                     pom.apiDependencies.add(
                         newMavenDependency(
-                            'org.codehaus.groovy',
+                            group,
                             'groovy-all',
                             version
                         ) {
-                            it.excludeRules.add(newExcludeRule('org.codehaus.groovy', 'groovy-cli-picocli'))
-                            it.excludeRules.add(newExcludeRule('org.codehaus.groovy', 'groovy-docgenerator'))
-                            it.excludeRules.add(newExcludeRule('org.codehaus.groovy', 'groovy-groovysh'))
-                            it.excludeRules.add(newExcludeRule('org.codehaus.groovy', 'groovy-jmx'))
-                            it.excludeRules.add(newExcludeRule('org.codehaus.groovy', 'groovy-jsr223'))
-                            it.excludeRules.add(newExcludeRule('org.codehaus.groovy', 'groovy-macro'))
-                            it.excludeRules.add(newExcludeRule('org.codehaus.groovy', 'groovy-servlet'))
-                            it.excludeRules.add(newExcludeRule('org.codehaus.groovy', 'groovy-swing'))
-                            it.excludeRules.add(newExcludeRule('org.codehaus.groovy', 'groovy-testng'))
+                            it.excludeRules.add(newExcludeRule(group, 'groovy-cli-picocli'))
+                            it.excludeRules.add(newExcludeRule(group, 'groovy-docgenerator'))
+                            it.excludeRules.add(newExcludeRule(group, 'groovy-groovysh'))
+                            it.excludeRules.add(newExcludeRule(group, 'groovy-jmx'))
+                            it.excludeRules.add(newExcludeRule(group, 'groovy-jsr223'))
+                            it.excludeRules.add(newExcludeRule(group, 'groovy-macro'))
+                            it.excludeRules.add(newExcludeRule(group, 'groovy-servlet'))
+                            it.excludeRules.add(newExcludeRule(group, 'groovy-swing'))
+                            it.excludeRules.add(newExcludeRule(group, 'groovy-testng'))
                             it.excludeRules.add(newExcludeRule('org.apache.ant', '*'))
                             it.excludeRules.add(newExcludeRule('commons-cli', '*'))
                             it.excludeRules.add(newExcludeRule('junit', '*'))
@@ -82,7 +84,7 @@ class PublishLocalGroovyPlugin extends BasePublishPlugin {
                     if (compareVersions(version, '2.5') >= 0) {
                         pom.apiDependencies.add(
                             newMavenDependency(
-                                'org.codehaus.groovy',
+                                group,
                                 'groovy-dateutil',
                                 version
                             )
@@ -129,14 +131,14 @@ class PublishLocalGroovyPlugin extends BasePublishPlugin {
 
         // Has 'groovy' or 'groovy-all' dependencies
         assert resolvedModuleComponentIdentifiers.any {
-            boolean isGroovy = it.group == 'org.codehaus.groovy'
+            boolean isGroovy = isGroovyGroup(it.group)
             isGroovy &= it.module == 'groovy' || it.module == 'groovy-all'
             return isGroovy
         }
 
         // Has only expected dependencies
         assert resolvedModuleComponentIdentifiers.every {
-            boolean isExpected = it.group == 'org.codehaus.groovy'
+            boolean isExpected = isGroovyGroup(it.group)
             if (isVersionInRange('7', gradleApiVersion, null)) {
                 isExpected |= "${it.group}:${it.module}" == 'com.github.javaparser:javaparser-core'
             }
@@ -145,7 +147,10 @@ class PublishLocalGroovyPlugin extends BasePublishPlugin {
 
         // Doesn't have some specific Groovy dependencies
         assert !resolvedModuleComponentIdentifiers.any {
-            if (it.group != 'org.codehaus.groovy') return false
+            if (!isGroovyGroup(it.group)) {
+                return false
+            }
+
             boolean isNotExpected = it.module == 'groovy-cli-picocli'
             isNotExpected |= it.module == 'groovy-docgenerator'
             isNotExpected |= it.module == 'groovy-groovysh'
@@ -164,6 +169,19 @@ class PublishLocalGroovyPlugin extends BasePublishPlugin {
         assert zipsEntryNames.contains('groovy/lang/GString.class')
         assert zipsEntryNames.contains('groovy/json/JsonOutput.class')
         assert zipsEntryNames.contains('groovy/json/JsonSlurper.class')
+    }
+
+    private boolean isGroovyGroup(String group) {
+        return group == 'org.apache.groovy'
+            || group == 'org.codehaus.groovy'
+    }
+
+    private String getGroovyGroup(String groovyVersion) {
+        if (compareVersions(groovyVersion, '3.9999') < 0) {
+            return 'org.codehaus.groovy'
+        }
+
+        return 'org.apache.groovy'
     }
 
 }

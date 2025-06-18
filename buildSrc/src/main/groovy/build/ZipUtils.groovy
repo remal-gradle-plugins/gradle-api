@@ -13,17 +13,18 @@ abstract class ZipUtils {
     private static final ConcurrentMap<FileCacheKey, Set<String>> RESOURCE_NAMES_CACHE = new ConcurrentHashMap<>()
 
     static Set<String> getZipEntryNames(File archiveFile) {
-        return RESOURCE_NAMES_CACHE.computeIfAbsent(new FileCacheKey(archiveFile.absolutePath, archiveFile.lastModified())) { key ->
-            new ZipFile(key.path).withCloseable { zipFile ->
-                return zipFile.stream()
-                    .map { (ZipEntry) it }
-                    .filter { !it.directory }
-                    .map { it.name }
-                    .distinct()
-                    .sorted()
-                    .collect(Collectors.toCollection { new LinkedHashSet<>() })
+        return RESOURCE_NAMES_CACHE
+            .computeIfAbsent(new FileCacheKey(archiveFile.absolutePath, archiveFile.lastModified())) { key ->
+                new ZipFile(key.path).withCloseable { zipFile ->
+                    return zipFile.stream()
+                        .map { (ZipEntry) it }
+                        .filter { !it.directory }
+                        .map { it.name }
+                        .distinct()
+                        .sorted()
+                        .collect(Collectors.toCollection { new LinkedHashSet<>() })
+                }
             }
-        }
     }
 
     static Set<String> getZipsEntryNames(Iterable<File> archiveFiles) {

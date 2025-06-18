@@ -140,13 +140,14 @@ abstract class BasePublishPlugin extends BaseProjectPlugin {
                     publication.version = this.gradleApiVersion
 
                     publication.pom { MavenPomInternal pom ->
-                        List<MavenDependencyInternal> dependencyApiDependencies = dependencyPublications.collect { dependencyPublication ->
-                            newMavenDependency(
-                                dependencyPublication.groupId,
-                                dependencyPublication.artifactId,
-                                dependencyPublication.version
-                            )
-                        }
+                        List<MavenDependencyInternal> dependencyApiDependencies = dependencyPublications
+                            .collect { dependencyPublication ->
+                                newMavenDependency(
+                                    dependencyPublication.groupId,
+                                    dependencyPublication.artifactId,
+                                    dependencyPublication.version
+                                )
+                            }
 
                         if (configurePom(pom) != ConfigurationResult.PUBLISH) {
                             disablePublication(publication)
@@ -154,7 +155,8 @@ abstract class BasePublishPlugin extends BaseProjectPlugin {
                         }
 
                         List<MavenDependencyInternal> apiDependencies = new ArrayList<>(pom.apiDependencies)
-                        apiDependencies.sort { dep1, dep2 -> "${dep1.groupId}:${dep1.artifactId}" <=> "${dep2.groupId}:${dep2.artifactId}" }
+                        apiDependencies
+                            .sort { dep1, dep2 -> "${dep1.groupId}:${dep1.artifactId}" <=> "${dep2.groupId}:${dep2.artifactId}" }
                         pom.apiDependencies.clear()
                         pom.apiDependencies.addAll(dependencyApiDependencies)
                         pom.apiDependencies.addAll(apiDependencies)
@@ -189,7 +191,6 @@ abstract class BasePublishPlugin extends BaseProjectPlugin {
 
 
             TaskProvider validateTask = tasks.register(getValidateTaskName(publication)) {
-
                 group = 'gradle-api'
                 outputs.upToDateWhen { false }
 

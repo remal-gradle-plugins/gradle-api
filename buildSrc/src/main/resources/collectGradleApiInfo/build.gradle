@@ -36,8 +36,8 @@ class ClassLoaderLocator {}
 tasks.create('collectGradleApiInfo') {
     doFirst {
         Map<String, Object> result = [
-            'version'          : project.gradle.gradleVersion,
-            'gradleHomeDir'    : project.gradle.gradleHomeDir?.absolutePath,
+            'version': project.gradle.gradleVersion,
+            'gradleHomeDir': project.gradle.gradleHomeDir?.absolutePath,
             'gradleUserHomeDir': project.gradle.gradleUserHomeDir?.absolutePath,
         ]
 
