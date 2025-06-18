@@ -147,11 +147,11 @@ jobs:
         path: |
           ~/.gradle
 
-    - name: Setup Java 8
+    - name: Setup Java 17
       if: ${{ steps.cache.outputs.cache-hit != 'true' }}
       uses: actions/setup-java@v4
       with:
-        java-version: 8
+        java-version: 17
         distribution: zulu
 
     - name: Create cache content
@@ -190,10 +190,25 @@ jobs:
         path: |
           ~/.gradle
 
-    - name: Setup Java 8
+    - name: Determine Java version
+      id: select-java-version
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const gradleVersion = '${{ matrix.gradle-version }}'
+          core.info(`gradleVersion=${gradleVersion}`)
+          const gradleMajorVersion = gradleVersion.replace(/^(\d+).*/, '$1') | 0
+          core.info(`gradleMajorVersion=${gradleMajorVersion}`)
+          if (gradleMajorVersion <= 7) {
+            return 8
+          }
+          return 17
+
+    - name: Setup Java ${{steps.select-java-version.outputs.result}}
+      if: ${{ steps.cache.outputs.cache-hit != 'true' }}
       uses: actions/setup-java@v4
       with:
-        java-version: 8
+        java-version: ${{steps.select-java-version.outputs.result}}
         distribution: zulu
 
     - name: Build
