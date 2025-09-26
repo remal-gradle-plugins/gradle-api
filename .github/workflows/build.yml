@@ -16,6 +16,10 @@ on:
         required: false
         description: Max Gradle version
 
+concurrency:
+  group: build-${{github.ref}}
+  cancel-in-progress: false
+
 defaults:
   run:
     shell: bash
@@ -28,7 +32,6 @@ jobs:
     if: ${{ !startsWith(github.event.head_commit.message, '[skip ci]') && !startsWith(github.event.head_commit.message, '[push-back]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    concurrency: retrieve-gradle-versions
     outputs:
       gradle-versions: ${{ steps.create-output.outputs.result }}
     steps:
