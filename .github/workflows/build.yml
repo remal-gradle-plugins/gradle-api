@@ -35,6 +35,11 @@ jobs:
     outputs:
       gradle-versions: ${{ steps.create-output.outputs.result }}
     steps:
+    
+    
+    - run: exit 1
+
+    
     - name: Retrieve Gradle versions
       id: retrieve-gradle-versions
       uses: remal-github-actions/retrieve-gradle-versions@v1
