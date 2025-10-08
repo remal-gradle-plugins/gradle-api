@@ -48,7 +48,7 @@ jobs:
             - '[${{steps.min-gradle-version.outputs.value}},)'
     - name: Get all versions to test
       id: test-versions
-      emv:
+      env:
         MATRIX: ${{toJSON(steps.test-versions-draft.outputs.allMatrixIncludes)}}
       run: |
         MATRIX=$(jq '. += [{"gradle": "${{steps.min-gradle-version.outputs.value}}"}]' <<<"$MATRIX")
