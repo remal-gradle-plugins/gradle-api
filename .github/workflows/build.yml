@@ -27,8 +27,6 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v5
-      with:
-        fetch-depth: 0
 
     - name: Read min supported Gradle version
       id: min-gradle-version
@@ -43,7 +41,7 @@ jobs:
       with:
         matrix: |
           gradle:
-            dependency: java
+            dependency: gradle-wrapper
             only:
             - stable-majors+current-unstable
     - name: Get all versions to test
