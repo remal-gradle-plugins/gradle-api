@@ -1,6 +1,7 @@
 package build.tasks;
 
 import java.io.File;
+import java.nio.file.Path;
 import javax.inject.Inject;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.artifacts.ConfigurationContainer;
@@ -24,6 +25,15 @@ public abstract class AbstractBuildLogicTask extends DefaultTask {
     protected final File getProjectRelativeFile(String projectRelativePath) {
         var projectDir = getLayout().getProjectDirectory().getAsFile();
         return new File(projectDir, projectRelativePath);
+    }
+
+    protected String getProjectFileRelativePath(Path file) {
+        var projectDir = getLayout().getProjectDirectory().getAsFile().toPath();
+        return projectDir.relativize(file).toString().replace('\\', '/');
+    }
+
+    protected String getProjectFileRelativePath(File file) {
+        return getProjectFileRelativePath(file.toPath());
     }
 
 

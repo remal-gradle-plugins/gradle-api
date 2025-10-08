@@ -80,9 +80,7 @@ public abstract class ProcessGradleModuleClasspath extends AbstractMappingDepend
 
                 if (!gradleDependencies.getDependencies().containsKey(moduleDepId)) {
                     var moduleDepInfo = new GradleDependencyInfo();
-                    moduleDepInfo.setPath(
-                        getLayout().getProjectDirectory().getAsFile().toPath().relativize(moduleDepFile)
-                    );
+                    moduleDepInfo.setPath(getProjectFileRelativePath(moduleDepFile));
 
                     gradleDependencies.getDependencies().put(moduleDepId, moduleDepInfo);
                 }

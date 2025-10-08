@@ -1,5 +1,6 @@
 package build.tasks;
 
+import static build.Constants.GRADLE_API_PUBLISH_GROUP;
 import static java.lang.Math.pow;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
@@ -65,21 +66,36 @@ public abstract class PublishArtifacts extends AbstractBuildLogicTask
         try (var walk = walk(basePath)) {
             walk.filter(Files::isRegularFile).forEach(file -> {
                 var relativePath = basePath.relativize(file).toString().replace('\\', '/');
+                var expectedRelativePathPrefix = GRADLE_API_PUBLISH_GROUP.replace('.', '/') + '/';
+                if (!relativePath.startsWith(expectedRelativePathPrefix)) {
+                    return; // skip non-artifact files
+                }
+
                 put(relativePath, file);
             });
         }
     }
 
-    @SuppressWarnings("BusyWait")
     @SneakyThrows
+    @SuppressWarnings("BusyWait")
     private void put(String relativePath, Path file) {
+        while (relativePath.startsWith("/")) {
+            relativePath = relativePath.substring(1);
+        }
+
+        var baseUri = getRepository().getUrl().get();
+        while (baseUri.endsWith("/")) {
+            baseUri = baseUri.substring(0, baseUri.length() - 1);
+        }
+
+        var uri = URI.create(baseUri + '/' + relativePath);
+        getLogger().lifecycle("Uploading {}", uri);
+
         var auth = Base64.getEncoder().encodeToString(format(
             "%s:%s",
             getRepository().getUsername().get(),
             getRepository().getPassword().get()
         ).getBytes(UTF_8));
-
-        var uri = URI.create(getRepository().getUrl().get()).resolve(relativePath);
 
         var request = HttpRequest.newBuilder(uri)
             .header("Authorization", "Basic " + auth)
@@ -92,53 +108,54 @@ public abstract class PublishArtifacts extends AbstractBuildLogicTask
                 var response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
 
                 var statusCode = response.statusCode();
-                if (statusCode >= 400) {
-                    if (attempt < MAX_UPLOAD_ATTEMPTS
-                        || statusCode == 408
-                        || statusCode == 409
-                        || statusCode == 425
-                        || statusCode == 423
-                        || statusCode == 429
-                        || statusCode >= 500
-                    ) {
-                        var sleepMillis = toIntExact((long) (
-                            SLEEP_BETWEEN_UPLOAD_ATTEMPTS.toMillis() * pow(2, attempt - 1)
-                        ));
-                        getLogger().warn(
-                            "Could not {} `{}`. Received status code {} from server. Will retry in {}ms.",
-                            request.method(),
-                            request.uri(),
-                            statusCode,
-                            sleepMillis
-                        );
-                        Thread.sleep(sleepMillis);
-                        continue;
-                    }
+                if (statusCode < 400) {
+                    break;
+                }
 
-                    var responseBytes = response.body();
-
-                    var responseBodyString = "";
-                    var mediaType = response.headers().firstValue("Content-Type")
-                        .map(MediaType::parse)
-                        .orElse(null);
-                    if (mediaType != null) {
-                        var isText = TEXT_CONTENT_TYPE.matcher(mediaType.withoutParameters().toString()).find();
-                        if (isText) {
-                            var charset = mediaType.charset().or(UTF_8);
-                            responseBodyString = new String(responseBytes, charset);
-                        } else if (responseBytes.length > 0) {
-                            responseBodyString = format("<non-textual content of %d bytes>", responseBytes.length);
-                        }
-                    }
-
-                    throw new IllegalStateException(format(
-                        "Could not %s `%s`. Received status code %d from server:%n%s",
+                var isRetryableStatusCode = statusCode >= 500
+                    || statusCode == 408
+                    || statusCode == 409
+                    || statusCode == 425
+                    || statusCode == 423
+                    || statusCode == 429;
+                if (attempt < MAX_UPLOAD_ATTEMPTS && isRetryableStatusCode) {
+                    var sleepMillis = toIntExact((long) (
+                        SLEEP_BETWEEN_UPLOAD_ATTEMPTS.toMillis() * pow(2, attempt - 1)
+                    ));
+                    getLogger().warn(
+                        "Could not {} `{}`. Received status code {} from server. Will retry in {}ms.",
                         request.method(),
                         request.uri(),
                         statusCode,
-                        responseBodyString
-                    ));
+                        sleepMillis
+                    );
+                    Thread.sleep(sleepMillis);
+                    continue;
                 }
+
+                var responseBytes = response.body();
+
+                var responseBodyString = "";
+                var mediaType = response.headers().firstValue("Content-Type")
+                    .map(MediaType::parse)
+                    .orElse(null);
+                if (mediaType != null) {
+                    var isText = TEXT_CONTENT_TYPE.matcher(mediaType.withoutParameters().toString()).find();
+                    if (isText) {
+                        var charset = mediaType.charset().or(UTF_8);
+                        responseBodyString = new String(responseBytes, charset);
+                    } else if (responseBytes.length > 0) {
+                        responseBodyString = format("<non-textual content of %d bytes>", responseBytes.length);
+                    }
+                }
+
+                throw new IllegalStateException(format(
+                    "Could not %s `%s`. Received status code %d from server: %s",
+                    request.method(),
+                    request.uri(),
+                    statusCode,
+                    responseBodyString
+                ));
             }
         }
     }

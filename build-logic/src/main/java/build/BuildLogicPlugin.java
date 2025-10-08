@@ -205,12 +205,6 @@ public abstract class BuildLogicPlugin implements Plugin<Project> {
                 );
             }
         );
-
-
-        getTasks().register("last-task", task -> {
-            task.setGroup("gradle-api");
-            task.dependsOn(verifyPublishedArtifactsToLocalBuildRepository);
-        });
     }
 
     private void applyBasicJavaSettings(Project project) {

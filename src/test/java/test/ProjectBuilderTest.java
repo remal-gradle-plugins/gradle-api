@@ -1,9 +1,9 @@
 package test;
 
 import static com.google.common.io.MoreFiles.deleteRecursively;
+import static java.nio.file.Files.createTempDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.io.CleanupMode.NEVER;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,12 +13,14 @@ import org.gradle.testfixtures.ProjectBuilder;
 import org.gradle.util.GradleVersion;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 class ProjectBuilderTest {
 
-    @TempDir(cleanup = NEVER)
-    File projectDir;
+    final File projectDir;
+
+    public ProjectBuilderTest() throws IOException {
+        this.projectDir = createTempDirectory(getClass().getSimpleName() + '-').toFile();
+    }
 
     @AfterEach
     void afterEach() {

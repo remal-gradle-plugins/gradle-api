@@ -80,7 +80,7 @@ public abstract class ProcessModuleRegistry extends AbstractMappingDependenciesI
 
                 if (!gradleDependencies.getDependencies().containsKey(moduleDepId)) {
                     var moduleDepInfo = new GradleDependencyInfo();
-                    moduleDepInfo.setPath(gradleFilesDir.relativize(moduleFile));
+                    moduleDepInfo.setPath(getProjectFileRelativePath(moduleFile));
 
                     gradleDependencies.getDependencies().put(moduleDepId, moduleDepInfo);
                     queue.addLast(new SimpleImmutableEntry<>(moduleDepId, moduleDepInfo));

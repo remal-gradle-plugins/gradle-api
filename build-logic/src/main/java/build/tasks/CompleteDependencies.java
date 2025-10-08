@@ -66,6 +66,8 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
             throw new IllegalStateException("Can't determine groups for:\n  " + join("\n  ", depIdsWithoutGroup));
         }
 
+        fixPublishingVersions(gradleDependencies);
+
         fixSnapshotDependencies(gradleDependencies);
 
         return gradleDependencies;
@@ -205,6 +207,13 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
             }
             return;
         }
+    }
+
+
+    private void fixPublishingVersions(GradleDependencies gradleDependencies) {
+        gradleDependencies.getDependencies().keySet().stream()
+            .filter(id -> id.getGroup().equals(GRADLE_API_PUBLISH_GROUP))
+            .forEach(id -> id.setVersion(gradleDependencies.getGradleVersion()));
     }
 
 

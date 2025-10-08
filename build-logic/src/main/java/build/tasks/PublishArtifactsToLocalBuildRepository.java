@@ -395,21 +395,12 @@ public abstract class PublishArtifactsToLocalBuildRepository
     }
 
 
+    @SuppressWarnings("deprecation")
     private static void publishHashesOf(File file) {
-        publishSha1Of(file);
-        publishMd5Of(file);
-    }
-
-    @SneakyThrows
-    @SuppressWarnings("deprecation")
-    private static void publishSha1Of(File file) {
-        publishHashOf(file, Hashing.sha1(), ".sha1");
-    }
-
-    @SneakyThrows
-    @SuppressWarnings("deprecation")
-    private static void publishMd5Of(File file) {
         publishHashOf(file, Hashing.md5(), ".md5");
+        publishHashOf(file, Hashing.sha1(), ".sha1");
+        publishHashOf(file, Hashing.sha256(), ".sha256");
+        publishHashOf(file, Hashing.sha512(), ".sha512");
     }
 
     @SneakyThrows

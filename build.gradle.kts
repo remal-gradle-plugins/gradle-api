@@ -11,11 +11,17 @@ tasks.withType<PublishArtifactsToLocalBuildRepository>().configureEach { onlyIf 
 
 
 buildLogic {
-    project.findProperty("gradle.version")?.toString()?.ifEmpty { null }?.run { gradleVersion = this }
+    sequenceOf(findProperty("gradle.version")?.toString()).filterNotNull().filterNot(String::isBlank).firstOrNull()?.run { gradleVersion = this }
 
     license license@{
         this@license.name = "MIT License"
         this@license.url = "https://choosealicense.com/licenses/mit/"
+    }
+
+    repository {
+        url = "https://maven.pkg.github.com/remal-gradle-api/packages"
+        //sequenceOf(findProperty("github.publish-user")?.toString(), System.getenv("PUBLISH_USER")).filterNotNull().filterNot(String::isBlank).firstOrNull()?.run { username = this }
+        //sequenceOf(findProperty("github.publish-password")?.toString(), System.getenv("PUBLISH_PASSWORD")).filterNotNull().filterNot(String::isBlank).firstOrNull()?.run { password = this }
     }
 }
 

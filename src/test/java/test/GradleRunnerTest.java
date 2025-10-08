@@ -2,10 +2,10 @@ package test;
 
 import static com.google.common.io.MoreFiles.deleteRecursively;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.Files.createTempDirectory;
 import static java.nio.file.Files.newOutputStream;
 import static java.nio.file.Files.write;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.io.CleanupMode.NEVER;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,12 +15,14 @@ import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.util.GradleVersion;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
 class GradleRunnerTest {
 
-    @TempDir(cleanup = NEVER)
-    File projectDir;
+    final File projectDir;
+
+    public GradleRunnerTest() throws IOException {
+        this.projectDir = createTempDirectory(getClass().getSimpleName() + '-').toFile();
+    }
 
     @AfterEach
     void afterEach() {
