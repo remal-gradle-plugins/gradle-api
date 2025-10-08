@@ -44,11 +44,13 @@ jobs:
             dependency: gradle-wrapper
             only:
             - stable-majors+current-unstable
+            include:
+            - '[${{steps.min-gradle-version.outputs.value}},)'
     - name: Get all versions to test
       id: test-versions
       run: |
         MATRIX=$(cat <<'END_JSON'
-        ${{toJSON(steps.test-versions-draft.outputs.matrix)}}
+        ${{toJSON(steps.test-versions-draft.outputs.allMatrixIncludes)}}
         END_JSON
         )
         MATRIX=$(jq '. += [{"gradle": "${{steps.min-gradle-version.outputs.value}}"}]' <<<"$MATRIX")
