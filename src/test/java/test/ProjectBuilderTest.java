@@ -1,6 +1,7 @@
 package test;
 
 import static com.google.common.io.MoreFiles.deleteRecursively;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.io.CleanupMode.NEVER;
 
@@ -39,9 +40,15 @@ class ProjectBuilderTest {
         Project project = createProject(projectDir);
         project.getPluginManager().apply("java");
         project.getRepositories().mavenCentral();
-        project.getDependencies().add("testImplementation", "junit:junit:4.13.2");
-        Configuration conf = project.getConfigurations().getByName("testCompileClasspath");
-        assertDoesNotThrow(conf::getFiles);
+
+        Configuration depsConf = project.getConfigurations().getByName("testImplementation");
+        depsConf.getDependencies().add(
+            project.getDependencies().create("junit:junit:4.13.2")
+        );
+
+        Configuration resolvableConf = project.getConfigurations().getByName("testCompileClasspath");
+        assertDoesNotThrow(resolvableConf::getFiles);
+        assertThat(resolvableConf.getFiles()).isNotEmpty();
     }
 
 

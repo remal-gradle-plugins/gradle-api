@@ -43,6 +43,12 @@ jobs:
       with:
         file: gradle.properties
         property: 'gradle.min-version'
+    - name: Read max supported Gradle version
+      id: min-gradle-version
+      uses: remal-github-actions/read-property@v1
+      with:
+        file: gradle.properties
+        property: 'gradle.max-version'
 
     - name: Get draft versions to test
       id: test-versions-matrix
@@ -54,7 +60,7 @@ jobs:
             only:
             - stable-majors+current-unstable
             include:
-            - '[${{steps.min-gradle-version.outputs.value}},)'
+            - '[${{steps.min-gradle-version.outputs.value}},${{steps.max-gradle-version.outputs.value}}.9999)'
     - name: Get all versions to test
       id: test-versions
       env:
@@ -85,11 +91,14 @@ jobs:
       id: publish-versions
       uses: remal-github-actions/matrix-versions@v1
       with:
+        allowEmptyResult: true
         matrix: |
           gradle:
             dependency: gradle-wrapper
             only:
             - stable+current-unstable
+            include:
+            - '[${{steps.min-gradle-version.outputs.value}},${{steps.max-gradle-version.outputs.value}}.9999)'
             exclude: ${{steps.published-versions-array.outputs.json-array}}
 
   build:

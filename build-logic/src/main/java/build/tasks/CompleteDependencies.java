@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
 import lombok.SneakyThrows;
 import org.gradle.api.tasks.CacheableTask;
@@ -46,6 +47,8 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
         .put("bsh", "org.beanshell")
         .build();
 
+    private static final Pattern PREBUILT_GROOVY_VERSION = Pattern.compile("^\\d+\\.\\d+-2\\..+$");
+
     @Override
     protected GradleDependencies mapGradleDependencies(GradleDependencies gradleDependencies) {
         gradleDependencies.getDependencies().forEach(this::updateFromPomProperties);
@@ -53,14 +56,14 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
         gradleDependencies.getDependencies().forEach(this::updateGroup);
         gradleDependencies.getDependencies().forEach(this::updateBomDependencyId);
 
-        var depIdsWithoutGroup = gradleDependencies.getDependencies().keySet().stream()
+        var depIdsWithoutGroup = gradleDependencies.getDependencies()
+            .keySet()
+            .stream()
             .filter(depId -> depId.getGroup().isEmpty())
             .map(String::valueOf)
             .toList();
         if (!depIdsWithoutGroup.isEmpty()) {
-            throw new IllegalStateException(
-                "Can't determine groups for:\n  " + join("\n  ", depIdsWithoutGroup)
-            );
+            throw new IllegalStateException("Can't determine groups for:\n  " + join("\n  ", depIdsWithoutGroup));
         }
 
         fixSnapshotDependencies(gradleDependencies);
@@ -70,18 +73,15 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
 
     @SneakyThrows
     private void updateFromPomProperties(GradleDependencyId depId, GradleDependencyInfo depInfo) {
-        var depFile = Optional.ofNullable(depInfo.getPath())
-            .map(this::getGradleFile)
-            .orElse(null);
+        var depFile = Optional.ofNullable(depInfo.getPath()).map(this::getGradleFile).orElse(null);
         if (depFile == null) {
             return;
         }
 
         var pomPropertiesEntryName = getZipFileEntryNames(depFile).stream()
-            .filter(name ->
-                name.startsWith("META-INF/maven/")
-                    && name.endsWith("/" + depId.getName() + "/pom.properties")
-            )
+            .filter(name -> name.startsWith("META-INF/maven/") && name.endsWith("/"
+                + depId.getName()
+                + "/pom.properties"))
             .findFirst()
             .orElse(null);
         if (pomPropertiesEntryName != null) {
@@ -130,7 +130,7 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
         }
 
         if (depNamePrefix.startsWith("groovy-")) {
-            if (depId.getVersion().startsWith("1.3-2.")) {
+            if (PREBUILT_GROOVY_VERSION.matcher(depId.getVersion()).matches()) {
                 depId.setGroup(GRADLE_API_PUBLISH_GROUP); // some prebuilt groovy from Gradle
             } else if (compareVersions(depId.getVersion(), "4") >= 0) {
                 depId.setGroup("org.apache.groovy");
@@ -143,16 +143,13 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
 
         if (depNamePrefix.startsWith("gradle-")
             || depNamePrefix.startsWith("local-groovy-")
-            || depNamePrefix.startsWith("native-platform-")
-        ) {
+            || depNamePrefix.startsWith("native-platform-")) {
             depId.setGroup(GRADLE_API_PUBLISH_GROUP);
             return;
         }
 
 
-        var depFile = Optional.ofNullable(depInfo.getPath())
-            .map(this::getGradleFile)
-            .orElse(null);
+        var depFile = Optional.ofNullable(depInfo.getPath()).map(this::getGradleFile).orElse(null);
 
         if (depNamePrefix.startsWith("annotations-") && depFile != null) {
             var hasJetbrainsNonNull = getZipFileEntryNames(depFile).stream()
@@ -213,13 +210,10 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
 
     private void fixSnapshotDependencies(GradleDependencies gradleDependencies) {
         var deps = gradleDependencies.getDependencies();
-        var snapshotIds = deps.keySet().stream()
-            .filter(id -> id.getVersion().endsWith("-SNAPSHOT"))
-            .toList();
+        var snapshotIds = deps.keySet().stream().filter(id -> id.getVersion().endsWith("-SNAPSHOT")).toList();
         for (var snapshotId : snapshotIds) {
-            var newId = gradleDependencies.getGradleDependencyIdByPathOrName(
-                "gradle-snapshot-dependency-" + snapshotId.getName()
-            );
+            var newId = gradleDependencies.getGradleDependencyIdByPathOrName("gradle-snapshot-dependency-"
+                + snapshotId.getName());
             newId.setVersion(gradleDependencies.getGradleVersion());
             newId.setGroup(GRADLE_API_PUBLISH_GROUP);
 
