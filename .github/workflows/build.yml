@@ -51,10 +51,7 @@ jobs:
       env:
         MATRIX: ${{fromJSON(steps.test-versions-draft.outputs.allMatrixIncludes)}}
       run: |
+        echo "MATRIX=$MATRIX"
         MATRIX=$(jq '. += [{"gradle": "${{steps.min-gradle-version.outputs.value}}"}]' <<<"$MATRIX")
+        echo "MATRIX=$MATRIX"
         echo "matrix=$MATRIX" | tee -a $GITHUB_OUTPUT
-
-    - name: Dump
-      env:
-        MATRIX: ${{fromJSON(steps.test-versions.outputs.matrix)}}
-      run: echo "$MATRIX"
