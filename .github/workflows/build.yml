@@ -74,7 +74,7 @@ jobs:
       id: published-versions-matrix
       uses: remal-github-actions/matrix-versions@v1
       with:
-        batchLimit: 100000
+        elementsPerBatch: 99999
         allowEmptyResult: true
         matrix: |
           gradle:
