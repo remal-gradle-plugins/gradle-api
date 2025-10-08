@@ -73,7 +73,7 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
 
     @SneakyThrows
     private void updateFromPomProperties(GradleDependencyId depId, GradleDependencyInfo depInfo) {
-        var depFile = Optional.ofNullable(depInfo.getPath()).map(this::getGradleFile).orElse(null);
+        var depFile = Optional.ofNullable(depInfo.getPath()).map(this::getProjectRelativeFile).orElse(null);
         if (depFile == null) {
             return;
         }
@@ -149,7 +149,7 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
         }
 
 
-        var depFile = Optional.ofNullable(depInfo.getPath()).map(this::getGradleFile).orElse(null);
+        var depFile = Optional.ofNullable(depInfo.getPath()).map(this::getProjectRelativeFile).orElse(null);
 
         if (depNamePrefix.startsWith("annotations-") && depFile != null) {
             var hasJetbrainsNonNull = getZipFileEntryNames(depFile).stream()

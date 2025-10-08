@@ -1,5 +1,7 @@
 package build.utils;
 
+import static build.Constants.FALLBACK_JAVA_VERSION;
+import static build.Constants.MIN_GRADLE_VERSION_TO_JAVA_VERSION;
 import static com.google.common.io.RecursiveDeleteOption.ALLOW_INSECURE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.Files.createDirectories;
@@ -27,6 +29,8 @@ import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.strategy.DefaultV
 import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.strategy.Version;
 import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.strategy.VersionParser;
 import org.gradle.api.provider.Provider;
+import org.gradle.jvm.toolchain.JavaLanguageVersion;
+import org.gradle.util.GradleVersion;
 import org.intellij.lang.annotations.Language;
 import org.jspecify.annotations.Nullable;
 
@@ -90,6 +94,23 @@ public abstract class Utils {
             }
         }
         return path;
+    }
+
+
+    public static JavaLanguageVersion getGradleJvmVersion(GradleVersion gradleVersion) {
+        gradleVersion = gradleVersion.getBaseVersion();
+
+        for (var entry : MIN_GRADLE_VERSION_TO_JAVA_VERSION.entrySet()) {
+            if (gradleVersion.compareTo(entry.getKey()) >= 0) {
+                return entry.getValue();
+            }
+        }
+
+        return FALLBACK_JAVA_VERSION;
+    }
+
+    public static JavaLanguageVersion getGradleJvmVersion(String gradleVersion) {
+        return getGradleJvmVersion(GradleVersion.version(gradleVersion));
     }
 
 

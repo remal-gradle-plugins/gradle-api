@@ -10,6 +10,7 @@ import static org.gradle.api.tasks.PathSensitivity.RELATIVE;
 import build.dto.GradlePublishedDependencies;
 import build.dto.GradlePublishedDependencyInfo;
 import build.utils.Json;
+import build.utils.WithLocalBuildRepository;
 import java.io.File;
 import java.util.Optional;
 import java.util.Set;
@@ -29,7 +30,7 @@ import org.jspecify.annotations.Nullable;
 @CacheableTask
 public abstract class VerifyPublishedArtifactsToLocalBuildRepository
     extends AbstractBuildLogicTask
-    implements VerificationTask {
+    implements WithLocalBuildRepository, VerificationTask {
 
     {
         notCompatibleWithConfigurationCache("Resolves configurations at execution");
@@ -38,7 +39,8 @@ public abstract class VerifyPublishedArtifactsToLocalBuildRepository
 
     @InputDirectory
     @PathSensitive(RELATIVE)
-    public abstract DirectoryProperty getGradlePublishedDependenciesDir();
+    @Override
+    public abstract DirectoryProperty getLocalBuildRepository();
 
     @InputFile
     @PathSensitive(RELATIVE)
@@ -69,7 +71,7 @@ public abstract class VerifyPublishedArtifactsToLocalBuildRepository
 
     {
         onlyIf(__ -> {
-            getGradlePublishedDependenciesDir().finalizeValueOnRead();
+            getLocalBuildRepository().finalizeValueOnRead();
             getGradlePublishedDependenciesJsonFile().finalizeValueOnRead();
             getStatusFile().finalizeValueOnRead();
             return true;
@@ -157,7 +159,7 @@ public abstract class VerifyPublishedArtifactsToLocalBuildRepository
     }
 
     protected final File getGradleFile(String path) {
-        return getGradlePublishedDependenciesDir().file(path).get().getAsFile();
+        return getLocalBuildRepository().file(path).get().getAsFile();
     }
 
 }

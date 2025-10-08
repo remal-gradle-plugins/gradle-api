@@ -1,25 +1,23 @@
 package build;
 
+import build.utils.WithGradleVersion;
+import build.utils.WithLocalBuildRepository;
 import build.utils.WithPublishLicense;
+import build.utils.WithPublishRepository;
 import javax.inject.Inject;
-import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.ProjectLayout;
-import org.gradle.api.provider.Property;
 import org.gradle.util.GradleVersion;
 
-public abstract class BuildLogicExtension implements WithPublishLicense {
-
-    public abstract Property<String> getGradleVersion();
+public abstract class BuildLogicExtension
+    implements WithGradleVersion, WithPublishLicense, WithLocalBuildRepository, WithPublishRepository {
 
     {
         getGradleVersion().convention(GradleVersion.current().getVersion());
     }
 
 
-    public abstract DirectoryProperty getLocalMavenRepository();
-
     {
-        getLocalMavenRepository().convention(getLayout().getBuildDirectory().dir("m2"));
+        getLocalBuildRepository().convention(getLayout().getBuildDirectory().dir("m2"));
     }
 
 

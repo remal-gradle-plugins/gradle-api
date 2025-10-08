@@ -2,7 +2,6 @@ package build;
 
 import static build.Constants.FALLBACK_JAVA_VERSION;
 import static build.Constants.GRADLE_API_PUBLISH_GROUP;
-import static build.Constants.MIN_GRADLE_VERSION_TO_JAVA_VERSION;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import build.tasks.AbstractGradleFilesConsumerTask;
@@ -12,9 +11,15 @@ import build.tasks.CreateSimpleGradleDependencies;
 import build.tasks.ExtractGradleFiles;
 import build.tasks.ProcessGradleModuleClasspath;
 import build.tasks.ProcessModuleRegistry;
+import build.tasks.PublishArtifacts;
 import build.tasks.PublishArtifactsToLocalBuildRepository;
 import build.tasks.VerifyPublishedArtifactsToLocalBuildRepository;
 import build.utils.DependenciesInjectable;
+import build.utils.Utils;
+import build.utils.WithGradleVersion;
+import build.utils.WithLocalBuildRepository;
+import build.utils.WithPublishLicense;
+import build.utils.WithPublishRepository;
 import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
@@ -35,7 +40,6 @@ import org.gradle.jvm.toolchain.JavaInstallationMetadata;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.jvm.toolchain.JavaToolchainService;
-import org.gradle.util.GradleVersion;
 
 public abstract class BuildLogicPlugin implements Plugin<Project> {
 
@@ -43,17 +47,24 @@ public abstract class BuildLogicPlugin implements Plugin<Project> {
     public void apply(Project project) {
         var extension = project.getExtensions().create("buildLogic", BuildLogicExtension.class);
         var gradleVersion = extension.getGradleVersion();
-        var gradleJvmVersion = gradleVersion
-            .map(GradleVersion::version)
-            .map(GradleVersion::getBaseVersion)
-            .map(version -> {
-                for (var entry : MIN_GRADLE_VERSION_TO_JAVA_VERSION.entrySet()) {
-                    if (version.compareTo(entry.getKey()) >= 0) {
-                        return entry.getValue();
-                    }
-                }
-                return FALLBACK_JAVA_VERSION;
-            });
+
+        getTasks().configureEach(task -> {
+            if (task instanceof WithGradleVersion typed) {
+                typed.getGradleVersion().convention(gradleVersion);
+            }
+            if (task instanceof WithPublishLicense typed) {
+                typed.getLicense().getName().convention(extension.getLicense().getName());
+                typed.getLicense().getUrl().convention(extension.getLicense().getUrl());
+            }
+            if (task instanceof WithLocalBuildRepository typed) {
+                typed.getLocalBuildRepository().convention(extension.getLocalBuildRepository());
+            }
+            if (task instanceof WithPublishRepository typed) {
+                typed.getRepository().getUrl().convention(extension.getRepository().getUrl());
+                typed.getRepository().getUsername().convention(extension.getRepository().getUsername());
+                typed.getRepository().getPassword().convention(extension.getRepository().getPassword());
+            }
+        });
 
 
         project.getPluginManager().apply("java-library");
@@ -62,19 +73,19 @@ public abstract class BuildLogicPlugin implements Plugin<Project> {
 
         getTasks().withType(Test.class).configureEach(task -> {
             task.getJavaLauncher().set(getJavaToolchainService().launcherFor(spec -> {
-                spec.getLanguageVersion().set(gradleJvmVersion);
+                spec.getLanguageVersion().set(gradleVersion.map(Utils::getGradleJvmVersion));
             }));
         });
 
 
         project.afterEvaluate(_ -> {
-            extension.getLocalMavenRepository().finalizeValueOnRead();
+            extension.getLocalBuildRepository().finalizeValueOnRead();
 
             getRepositories().exclusiveContent(exclusive -> {
                 exclusive.forRepositories(
                     getRepositories().maven(maven -> {
                         maven.setName("localBuildRepository");
-                        maven.setUrl(extension.getLocalMavenRepository().getAsFile().get().toURI());
+                        maven.setUrl(extension.getLocalBuildRepository().getAsFile().get().toURI());
                     })
                 );
                 exclusive.filter(filter -> {
@@ -88,7 +99,6 @@ public abstract class BuildLogicPlugin implements Plugin<Project> {
             "extractGradleFiles",
             ExtractGradleFiles.class,
             task -> {
-                task.getGradleVersion().convention(gradleVersion);
             }
         );
 
@@ -147,9 +157,6 @@ public abstract class BuildLogicPlugin implements Plugin<Project> {
                 task.getGradleDependenciesFile().convention(
                     completeDependencies.flatMap(AbstractProducingDependenciesInfoTask::getGradleDependenciesJsonFile)
                 );
-                task.getOutputDirectory().convention(extension.getLocalMavenRepository());
-                task.getLicense().getName().convention(extension.getLicense().getName());
-                task.getLicense().getUrl().convention(extension.getLicense().getUrl());
             }
         );
 
@@ -157,9 +164,9 @@ public abstract class BuildLogicPlugin implements Plugin<Project> {
             "verifyPublishedArtifactsToLocalBuildRepository",
             VerifyPublishedArtifactsToLocalBuildRepository.class,
             task -> {
-                task.getGradlePublishedDependenciesDir().convention(
+                task.getLocalBuildRepository().convention(
                     publishArtifactsToLocalBuildRepository
-                        .flatMap(PublishArtifactsToLocalBuildRepository::getOutputDirectory)
+                        .flatMap(PublishArtifactsToLocalBuildRepository::getLocalBuildRepository)
                 );
                 task.getGradlePublishedDependenciesJsonFile().convention(
                     publishArtifactsToLocalBuildRepository
@@ -174,6 +181,7 @@ public abstract class BuildLogicPlugin implements Plugin<Project> {
 
         getTasks().withType(Test.class).configureEach(task -> {
             task.notCompatibleWithConfigurationCache("Resolves configurations at execution");
+
             var deps = getObjects().newInstance(DependenciesInjectable.class);
             task.onlyIf("Update classpath", currentTask -> {
                 var test = (Test) currentTask;
@@ -185,6 +193,18 @@ public abstract class BuildLogicPlugin implements Plugin<Project> {
                 return true;
             });
         });
+
+
+        var publishArtifacts = getTasks().register(
+            "publishArtifacts",
+            PublishArtifacts.class,
+            task -> {
+                task.getLocalBuildRepository().convention(
+                    publishArtifactsToLocalBuildRepository
+                        .flatMap(PublishArtifactsToLocalBuildRepository::getLocalBuildRepository)
+                );
+            }
+        );
 
 
         getTasks().register("last-task", task -> {

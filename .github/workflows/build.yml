@@ -134,14 +134,14 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v5
 
-    - name: Build ${{matrix.gradle}}
+    - name: Build
       run: |
         ./gradlew-retry-connection-timeouts build "-Pgradle.version=${{matrix.gradle}}"
 
-    - name: Publish ${{matrix.gradle}}
-      if: ${{needs.prepare.outputs.publish-matrix-includes != '[]'}}
+    - name: Publish
+      if: ${{github.ref == 'refs/heads/main' && needs.prepare.outputs.publish-matrix-includes != '[]'}}
       run: |
-        ./gradlew-retry-connection-timeouts publishArtifactsToLocalBuildRepository "-Pgradle.version=${{matrix.gradle}}"
+        ./gradlew-retry-connection-timeouts publishArtifacts "-Pgradle.version=${{matrix.gradle}}"
 
 
   build-success:

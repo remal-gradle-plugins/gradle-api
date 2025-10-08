@@ -1,5 +1,6 @@
 package build.tasks;
 
+import java.io.File;
 import javax.inject.Inject;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.artifacts.ConfigurationContainer;
@@ -17,6 +18,12 @@ public abstract class AbstractBuildLogicTask extends DefaultTask {
         if (this instanceof VerificationTask) {
             setGroup("verification");
         }
+    }
+
+
+    protected final File getProjectRelativeFile(String projectRelativePath) {
+        var projectDir = getLayout().getProjectDirectory().getAsFile();
+        return new File(projectDir, projectRelativePath);
     }
 
 

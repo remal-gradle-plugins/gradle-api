@@ -32,7 +32,6 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-guava")
     implementation("org.ow2.asm:asm-tree")
     implementation("org.apache.maven:maven-model:3.9.9")
-    implementation("org.apache.maven.resolver:maven-resolver-transport-http:1.9.18")
     implementation("org.assertj:assertj-core:3.27.6")
 }
 

@@ -4,7 +4,9 @@ Gradle API artifacts for plugins development.
 
 ## Usage
 
-The artifacts are published to [a separate GitHub organisation](https://github.com/orgs/remal-gradle-api/packages), as it allows to republish them by recreating the organisation. It is unlikely that this will happen, however, it mitigates risks of broken artifacts publishing.
+The artifacts are published to [a separate GitHub organization](https://github.com/orgs/remal-gradle-api/packages),
+as it allows to republish them by recreating the organization.
+It is unlikely that this will happen, however, it mitigates the risks of broken artifacts publishing.
 
 ### Register repository
 
@@ -53,14 +55,19 @@ This dependency includes [Gradle API](#gradle-api).
 
 ## Motivation
 
-Unfortunately, Gradle team doesn't publish Gradle API artifacts somewhere, so plugin developers have to rely on dependencies, provided by Gradle itself ([`localGroovy()`](https://docs.gradle.org/current/javadoc/org/gradle/api/artifacts/dsl/DependencyHandler.html#localGroovy--), [`gradleApi()`](https://docs.gradle.org/current/javadoc/org/gradle/api/artifacts/dsl/DependencyHandler.html#gradleApi--), [`gradleTestKit()`](https://docs.gradle.org/current/javadoc/org/gradle/api/artifacts/dsl/DependencyHandler.html#gradleTestKit--)). However, such approach has some drawbacks:
+Unfortunately, Gradle team doesn't publish Gradle API artifacts somewhere,
+so plugin developers have to rely on dependencies provided by Gradle itself
+([`localGroovy()`](https://docs.gradle.org/current/javadoc/org/gradle/api/artifacts/dsl/DependencyHandler.html#localGroovy--), [`gradleApi()`](https://docs.gradle.org/current/javadoc/org/gradle/api/artifacts/dsl/DependencyHandler.html#gradleApi--), [`gradleTestKit()`](https://docs.gradle.org/current/javadoc/org/gradle/api/artifacts/dsl/DependencyHandler.html#gradleTestKit--)).
+However, such approach has some drawbacks:
 
 * You can't run unit and functional tests against Gradle version different from Gradle installation.
 * You can't use build the project with Gradle API dependencies of version different from Gradle installation.
 * If you use `bin` distribution, you don't have access to sources.
 * Even if you use `all` distribution, sometimes IDE (IntelliJ IDEA) fails attaching sources to Gradle API dependencies.
 
-All these issues can be eliminated by publishing Gradle API artifacts to some Maven repository, and use them as external dependencies. This project does exactly that.
+All these issues can be eliminated by publishing Gradle API artifacts to some Maven repository,
+and using them as external dependencies.
+This project does exactly that.
 
 ## Principles
 
@@ -75,11 +82,11 @@ Artifacts for all Gradle release versions greater than 3.0 MUST be published.
 The project uses [Gradle Tooling API](https://docs.gradle.org/current/userguide/tooling_api.html)
 to download Gradle distributions and extract artifacts.
 
-Gradle Tooling API requires at least Gradle 2.6.
+Gradle Tooling API requires at least Gradle 2.6, but publishing 2.* artifacts is optional (see below).
 
 ### MAY publish artifacts for Gradle 2.* release versions
 
-Building 2.6 artifacts is considerably more difficult, than building >= 3.*.
+Building 2.* artifacts is considerably more difficult, than building >= 3.*.
 That's why publishing 2.* artifacts is optional.
 
 ### SHOULD publish artifacts for release-candidates Gradle versions

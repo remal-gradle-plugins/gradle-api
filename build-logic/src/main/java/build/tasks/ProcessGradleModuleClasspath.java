@@ -27,7 +27,7 @@ public abstract class ProcessGradleModuleClasspath extends AbstractMappingDepend
                 continue;
             }
 
-            var file = getGradleFile(path);
+            var file = getProjectRelativeFile(path);
             var isGradleFile = file.getName().startsWith("gradle-");
             if (!isGradleFile) {
                 continue;
@@ -80,7 +80,9 @@ public abstract class ProcessGradleModuleClasspath extends AbstractMappingDepend
 
                 if (!gradleDependencies.getDependencies().containsKey(moduleDepId)) {
                     var moduleDepInfo = new GradleDependencyInfo();
-                    moduleDepInfo.setPath(gradleFilesDir.relativize(moduleDepFile));
+                    moduleDepInfo.setPath(
+                        getLayout().getProjectDirectory().getAsFile().toPath().relativize(moduleDepFile)
+                    );
 
                     gradleDependencies.getDependencies().put(moduleDepId, moduleDepInfo);
                 }

@@ -52,7 +52,7 @@ public abstract class ProcessModuleRegistry extends AbstractMappingDependenciesI
                 continue;
             }
 
-            var file = getGradleFile(path);
+            var file = getProjectRelativeFile(path);
             var isGradleFile = file.getName().startsWith("gradle-");
             if (!isGradleFile) {
                 continue;

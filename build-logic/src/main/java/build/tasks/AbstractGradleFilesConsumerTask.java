@@ -3,7 +3,6 @@ package build.tasks;
 import static java.nio.file.Files.walk;
 import static org.gradle.api.tasks.PathSensitivity.RELATIVE;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.regex.Pattern;
@@ -27,10 +26,6 @@ public abstract class AbstractGradleFilesConsumerTask extends AbstractBuildLogic
         });
     }
 
-
-    protected final File getGradleFile(String path) {
-        return getGradleFilesDirectory().file(path).get().getAsFile();
-    }
 
     @Nullable
     @SneakyThrows

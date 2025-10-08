@@ -8,6 +8,8 @@ import static java.nio.file.Files.deleteIfExists;
 import static java.nio.file.Files.newOutputStream;
 import static java.nio.file.Files.writeString;
 
+import build.utils.Utils;
+import build.utils.WithGradleVersion;
 import java.net.URI;
 import java.util.Map;
 import java.util.Properties;
@@ -15,13 +17,11 @@ import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.CacheableTask;
-import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.initialization.BuildCancellationToken;
-import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.tooling.CancellationToken;
 import org.gradle.tooling.GradleConnector;
@@ -29,27 +29,16 @@ import org.gradle.tooling.internal.consumer.CancellationTokenInternal;
 import org.gradle.util.GradleVersion;
 
 @CacheableTask
-public abstract class ExtractGradleFiles extends AbstractBuildLogicTask {
-
-    @Input
-    public abstract Property<String> getGradleVersion();
+public abstract class ExtractGradleFiles
+    extends AbstractBuildLogicTask
+    implements WithGradleVersion {
 
     @Nested
     public abstract Property<JavaLauncher> getJavaLauncher();
 
     {
-        getJavaLauncher().convention(getProviders().provider(() -> {
-            final int javaVersion;
-            var gradleVersion = GradleVersion.version(getGradleVersion().get()).getBaseVersion();
-            if (gradleVersion.compareTo(GradleVersion.version("9.0")) >= 0) {
-                javaVersion = 17;
-            } else {
-                javaVersion = 8;
-            }
-
-            return getJavaToolchainService().launcherFor(spec -> {
-                spec.getLanguageVersion().set(JavaLanguageVersion.of(javaVersion));
-            }).get();
+        getJavaLauncher().set(getJavaToolchainService().launcherFor(spec -> {
+            spec.getLanguageVersion().set(getGradleVersion().map(Utils::getGradleJvmVersion));
         }));
     }
 
@@ -113,6 +102,7 @@ public abstract class ExtractGradleFiles extends AbstractBuildLogicTask {
                 import org.gradle.util.GradleVersion
 
                 def currentGradleVersion = GradleVersion.current().baseVersion
+                def buildProjectDir = file('#BUILD_PROJECT_DIR#')
 
                 def gradleHomeDir = gradle.gradleHomeDir?.canonicalFile
                 assert gradleHomeDir != null
@@ -180,7 +170,7 @@ public abstract class ExtractGradleFiles extends AbstractBuildLogicTask {
                     doLast {
                         def result = [
                             gradleVersion: GradleVersion.current().version,
-                            sourcesArchiveFile: file('#GRADLE_FILES_DIR#').toPath().relativize(sourcesArchiveFile.toPath()).toString(),
+                            sourcesArchiveFile: buildProjectDir.toPath().relativize(sourcesArchiveFile.toPath()).toString().replace("\\\\", "/"),
                         ]
 
                         def resultDependencies = result['dependencies'] = [:]
@@ -188,13 +178,14 @@ public abstract class ExtractGradleFiles extends AbstractBuildLogicTask {
                             def destFiles = resultDependencies[dependencyMethod] = []
                             dependencyFiles.forEach { file ->
                                 if (file.toPath().startsWith(gradleLibDir.toPath())) {
-                                    String relativePath = gradleLibDir.toPath().relativize(file.toPath()).toString().replace("\\\\", "/")
-                                    destFiles.add("lib/${relativePath}")
+                                    def relativePath = gradleLibDir.toPath().relativize(file.toPath()).toString().replace("\\\\", "/")
+                                    def destFile = new File('#GRADLE_FILES_DIR#/lib', relativePath)
+                                    destFiles.add(buildProjectDir.toPath().relativize(destFile.toPath()).toString().replace("\\\\", "/"))
                                 } else {
                                     def destFile = new File('#GRADLE_FILES_DIR#', file.name)
                                     destFile.parentFile.mkdirs()
                                     Files.copy(file.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
-                                    destFiles.add(file.name)
+                                    destFiles.add(buildProjectDir.toPath().relativize(destFile.toPath()).toString().replace("\\\\", "/"))
                                 }
                             }
                         }
@@ -211,7 +202,8 @@ public abstract class ExtractGradleFiles extends AbstractBuildLogicTask {
                     ? "create"
                     : "register",
                 "OUTPUT_FILE", outputFile,
-                "GRADLE_FILES_DIR", gradleFilesDirectory
+                "GRADLE_FILES_DIR", gradleFilesDirectory,
+                "BUILD_PROJECT_DIR", getLayout().getProjectDirectory()
             )
         ));
 

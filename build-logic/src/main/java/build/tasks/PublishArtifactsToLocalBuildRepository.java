@@ -22,8 +22,12 @@ import build.dto.GradlePublishedDependencies;
 import build.dto.GradlePublishedDependencyInfo;
 import build.utils.Json;
 import build.utils.Utils;
+import build.utils.WithLocalBuildRepository;
 import build.utils.WithPublishLicense;
 import build.utils.ZipUtils;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
+import com.google.common.io.Files;
 import java.io.File;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -51,7 +55,7 @@ import org.jspecify.annotations.Nullable;
 @CacheableTask
 public abstract class PublishArtifactsToLocalBuildRepository
     extends AbstractGradleFilesConsumerTask
-    implements WithPublishLicense {
+    implements WithPublishLicense, WithLocalBuildRepository {
 
     @InputFile
     @PathSensitive(RELATIVE)
@@ -59,24 +63,25 @@ public abstract class PublishArtifactsToLocalBuildRepository
 
 
     @OutputDirectory
-    public abstract DirectoryProperty getOutputDirectory();
+    @Override
+    public abstract DirectoryProperty getLocalBuildRepository();
 
     {
-        getOutputDirectory().convention(getLayout().getBuildDirectory().dir(getName()));
+        getLocalBuildRepository().convention(getLayout().getBuildDirectory().dir(getName()));
     }
 
     @OutputFile
     public abstract RegularFileProperty getGradlePublishedDependenciesJsonFile();
 
     {
-        getGradlePublishedDependenciesJsonFile().convention(getOutputDirectory().file("info.json"));
+        getGradlePublishedDependenciesJsonFile().convention(getLocalBuildRepository().file("info.json"));
     }
 
 
     {
         onlyIf(__ -> {
             getGradleDependenciesFile().finalizeValueOnRead();
-            getOutputDirectory().finalizeValueOnRead();
+            getLocalBuildRepository().finalizeValueOnRead();
             getGradlePublishedDependenciesJsonFile().finalizeValueOnRead();
             return true;
         });
@@ -85,7 +90,7 @@ public abstract class PublishArtifactsToLocalBuildRepository
 
     @TaskAction
     public void execute() throws Exception {
-        createCleanDirectory(getOutputDirectory().getAsFile().get().toPath());
+        createCleanDirectory(getLocalBuildRepository().getAsFile().get().toPath());
 
         var outputFile = getGradlePublishedDependenciesJsonFile().getAsFile().get().toPath();
         deleteIfExists(outputFile);
@@ -126,7 +131,7 @@ public abstract class PublishArtifactsToLocalBuildRepository
 
         configure.execute(pom);
 
-        var outputFile = getOutputDirectory().getAsFile().get().toPath()
+        var outputFile = getLocalBuildRepository().getAsFile().get().toPath()
             .resolve(pom.getGroupId().replace('.', '/'))
             .resolve(pom.getArtifactId())
             .resolve(pom.getVersion())
@@ -136,6 +141,8 @@ public abstract class PublishArtifactsToLocalBuildRepository
         try (var out = newOutputStream(outputFile)) {
             new MavenXpp3Writer().write(out, pom);
         }
+
+        publishHashesOf(outputFile.toFile());
 
         return outputFile.toFile();
     }
@@ -181,7 +188,7 @@ public abstract class PublishArtifactsToLocalBuildRepository
         publishedDeps.getDependencies().put(
             bomId,
             new GradlePublishedDependencyInfo(
-                getOutputDirectory().getAsFile().get().toPath().relativize(pomFile.toPath())
+                getLocalBuildRepository().getAsFile().get().toPath().relativize(pomFile.toPath())
             )
         );
 
@@ -256,7 +263,7 @@ public abstract class PublishArtifactsToLocalBuildRepository
         publishedDeps.getDependencies().put(
             id,
             new GradlePublishedDependencyInfo(
-                getOutputDirectory().getAsFile().get().toPath().relativize(pomFile.toPath())
+                getLocalBuildRepository().getAsFile().get().toPath().relativize(pomFile.toPath())
             )
         );
 
@@ -272,7 +279,7 @@ public abstract class PublishArtifactsToLocalBuildRepository
         GradlePublishedDependencies publishedDeps
     ) {
         var file = Optional.ofNullable(info.getPath())
-            .map(this::getGradleFile)
+            .map(this::getProjectRelativeFile)
             .orElse(null);
         if (file == null) {
             return null;
@@ -283,7 +290,7 @@ public abstract class PublishArtifactsToLocalBuildRepository
             .filter(Objects::nonNull)
             .map(GradleDependencyInfo::getPath)
             .filter(Objects::nonNull)
-            .map(this::getGradleFile)
+            .map(this::getProjectRelativeFile)
             .map(ZipUtils::getZipFileEntryNames)
             .flatMap(Collection::stream)
             .filter(not(PublishArtifactsToLocalBuildRepository::isNotFatJarEntry))
@@ -294,7 +301,7 @@ public abstract class PublishArtifactsToLocalBuildRepository
             .filter(not(entriesToExclude::contains))
             .toList();
 
-        var outputFile = getOutputDirectory().getAsFile().get().toPath()
+        var outputFile = getLocalBuildRepository().getAsFile().get().toPath()
             .resolve(id.getGroup().replace('.', '/'))
             .resolve(id.getName())
             .resolve(id.getVersion())
@@ -303,8 +310,10 @@ public abstract class PublishArtifactsToLocalBuildRepository
         Utils.copyJarEntries(file, outputFile.toFile(), entriesToInclude);
 
         publishedDeps.getDependencies().get(id).setJarFilePath(
-            getOutputDirectory().getAsFile().get().toPath().relativize(outputFile)
+            getLocalBuildRepository().getAsFile().get().toPath().relativize(outputFile)
         );
+
+        publishHashesOf(outputFile.toFile());
 
         return outputFile.toFile();
     }
@@ -328,7 +337,7 @@ public abstract class PublishArtifactsToLocalBuildRepository
             .distinct()
             .toList();
 
-        var sourcesArchiveFile = getGradleFile(gradleDependencies.getSourcesArchiveFile());
+        var sourcesArchiveFile = getProjectRelativeFile(gradleDependencies.getSourcesArchiveFile());
         var allSourceEntries = getZipFileEntryNames(sourcesArchiveFile);
         var entriesToInclude = allSourceEntries.stream()
             .filter(not(PublishArtifactsToLocalBuildRepository::isNotFatJarEntry))
@@ -351,7 +360,7 @@ public abstract class PublishArtifactsToLocalBuildRepository
 
         }
 
-        var outputFile = getOutputDirectory().getAsFile().get().toPath()
+        var outputFile = getLocalBuildRepository().getAsFile().get().toPath()
             .resolve(id.getGroup().replace('.', '/'))
             .resolve(id.getName())
             .resolve(id.getVersion())
@@ -360,8 +369,10 @@ public abstract class PublishArtifactsToLocalBuildRepository
         Utils.copyJarEntries(sourcesArchiveFile, outputFile.toFile(), entriesToInclude);
 
         publishedDeps.getDependencies().get(id).setSourcesJarFilePath(
-            getOutputDirectory().getAsFile().get().toPath().relativize(outputFile)
+            getLocalBuildRepository().getAsFile().get().toPath().relativize(outputFile)
         );
+
+        publishHashesOf(outputFile.toFile());
 
         return outputFile.toFile();
     }
@@ -381,6 +392,33 @@ public abstract class PublishArtifactsToLocalBuildRepository
     private static String getEntryPrefix(String name) {
         var lastSlashPos = name.lastIndexOf('/');
         return lastSlashPos > 0 ? name.substring(0, lastSlashPos + 1) : "";
+    }
+
+
+    private static void publishHashesOf(File file) {
+        publishSha1Of(file);
+        publishMd5Of(file);
+    }
+
+    @SneakyThrows
+    @SuppressWarnings("deprecation")
+    private static void publishSha1Of(File file) {
+        publishHashOf(file, Hashing.sha1(), ".sha1");
+    }
+
+    @SneakyThrows
+    @SuppressWarnings("deprecation")
+    private static void publishMd5Of(File file) {
+        publishHashOf(file, Hashing.md5(), ".md5");
+    }
+
+    @SneakyThrows
+    private static void publishHashOf(File file, HashFunction hashFunction, String extension) {
+        var hash = Files.asByteSource(file).hash(hashFunction).toString();
+        var destPath = new File(file.getPath() + extension).toPath();
+        try (var out = newOutputStream(destPath)) {
+            out.write(hash.getBytes(UTF_8));
+        }
     }
 
 }
