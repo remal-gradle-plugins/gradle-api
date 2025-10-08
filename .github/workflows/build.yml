@@ -23,7 +23,8 @@ env:
 jobs:
   prepare:
     outputs:
-      matrix-includes: ${{steps.test-versions.outputs.matrix}}
+      build-matrix-includes: ${{steps.test-versions.outputs.matrix}}
+      publish-matrix-includes: ${{steps.publish-versions.outputs.batchMatrixIncludes1 || '[]'}}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -88,6 +89,7 @@ jobs:
         JSON_ARRAY=$(jq -c '[.[] | .gradle]' <<<"$MATRIX")
         echo "json-array=$JSON_ARRAY" | tee -a $GITHUB_OUTPUT
     - name: Get versions to publish
+      if: ${{true}}
       id: publish-versions
       uses: remal-github-actions/matrix-versions@v1
       with:
@@ -101,13 +103,14 @@ jobs:
             - '[${{steps.min-gradle-version.outputs.value}},${{steps.max-gradle-version.outputs.value}}.9999)'
             exclude: ${{steps.published-versions-array.outputs.json-array}}
 
+
   build:
     needs:
     - prepare
     strategy:
       fail-fast: false
       matrix:
-        include: ${{fromJSON(needs.prepare.outputs.matrix-includes)}}
+        include: ${{fromJSON(needs.prepare.outputs.publish-matrix-includes != '[]' && needs.prepare.outputs.publish-matrix-includes || needs.prepare.outputs.build-matrix-includes)}}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -126,3 +129,19 @@ jobs:
     - name: Build
       run: |
         ./gradlew-retry-connection-timeouts build "-Pgradle.version=${{matrix.gradle}}"
+
+    - name: Publish
+      if: ${{needs.prepare.outputs.publish-matrix-includes != '[]'}}
+      run: |
+        ./gradlew-retry-connection-timeouts publishArtifactsToLocalBuildRepository "-Pgradle.version=${{matrix.gradle}}"
+
+
+  build-success:
+    needs:
+    - build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - name: Display success message
+      run: |
+        echo "The project has been built successfully"
