@@ -39,8 +39,8 @@ class ProjectBuilderTest {
         Project project = createProject(projectDir);
         project.getPluginManager().apply("java");
         project.getRepositories().mavenCentral();
-        Configuration conf = project.getConfigurations().getByName("testImplementation");
-        project.getDependencies().add(conf.getName(), "junit:junit:4.13.2");
+        project.getDependencies().add("testImplementation", "junit:junit:4.13.2");
+        Configuration conf = project.getConfigurations().getByName("testCompileClasspath");
         assertDoesNotThrow(conf::getFiles);
     }
 
