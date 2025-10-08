@@ -114,6 +114,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+    - name: Dump
+      env:
+        VALUE: ${{needs.prepare.outputs.publish-matrix-includes}}
+        VALUE_TO_BOOL: ${{needs.prepare.outputs.publish-matrix-includes != '[]'}}
+      run: |
+        echo "VALUE=$VALUE"
+        echo "VALUE_TO_BOOL=$VALUE_TO_BOOL"
+
     - name: Setup Java
       uses: actions/setup-java@v5
       with:
