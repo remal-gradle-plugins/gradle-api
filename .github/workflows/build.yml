@@ -49,12 +49,12 @@ jobs:
     - name: Get all versions to test
       id: test-versions
       env:
-        MATRIX: ${{toJSON(steps.test-versions-draft.outputs.allMatrixIncludes)}}
+        MATRIX: ${{fromJSON(steps.test-versions-draft.outputs.allMatrixIncludes)}}
       run: |
         MATRIX=$(jq '. += [{"gradle": "${{steps.min-gradle-version.outputs.value}}"}]' <<<"$MATRIX")
         echo "matrix=$MATRIX" | tee -a $GITHUB_OUTPUT
 
     - name: Dump
       env:
-        MATRIX: ${{toJSON(steps.test-versions.outputs.matrix)}}
+        MATRIX: ${{fromJSON(steps.test-versions.outputs.matrix)}}
       run: echo "$MATRIX"
