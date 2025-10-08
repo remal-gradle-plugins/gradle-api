@@ -23,8 +23,6 @@ public class BuildLogicPlugin implements Plugin<Project> {
     public void apply(Project project) {
         var tasks = project.getTasks();
         var repositories = project.getRepositories();
-        var dependencies = project.getDependencies();
-        var configurations = project.getConfigurations();
         var objects = project.getObjects();
 
 
@@ -34,8 +32,6 @@ public class BuildLogicPlugin implements Plugin<Project> {
         var extension = project.getExtensions().create("buildLogic", BuildLogicExtension.class);
         var gradleVersion = extension.getGradleVersion();
 
-
-        repositories.mavenCentral();
 
         project.afterEvaluate(_ -> {
             extension.getLocalMavenRepository().finalizeValueOnRead();

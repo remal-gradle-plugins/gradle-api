@@ -64,19 +64,30 @@ All these issues can be eliminated by publishing Gradle API artifacts to some Ma
 
 ## Principles
 
-The requirement level keywords "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" used in this document (case insensitive) are to be interpreted as described in [RFC 2119](https://www.ietf.org/rfc/rfc2119.txt).
+The requirement level keywords "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
+"SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" used in this document (case-insensitive)
+are to be interpreted as described in [RFC 2119](https://www.ietf.org/rfc/rfc2119.txt).
 
-### MUST publish artifacts for all Gradle release versions greater than 2.6
+### MUST publish artifacts for all Gradle release versions greater than 3.0
 
-Artifacts for all Gradle release versions greater than 2.6 MUST be published.
+Artifacts for all Gradle release versions greater than 3.0 MUST be published.
 
-The project uses Gradle Test Kit to download Gradle distributions and extract artifacts. Gradle Test Kit [requires](https://docs.gradle.org/current/userguide/third_party_integration.html#sec:embedding_compatibility) at least Gradle 2.6.
+The project uses [Gradle Tooling API](https://docs.gradle.org/current/userguide/tooling_api.html)
+to download Gradle distributions and extract artifacts.
+
+Gradle Tooling API requires at least Gradle 2.6.
+
+### MAY publish artifacts for Gradle 2.* release versions
+
+Building 2.6 artifacts is considerably more difficult, than building >= 3.*.
+That's why publishing 2.* artifacts is optional.
 
 ### SHOULD publish artifacts for release-candidates Gradle versions
 
 Being able to use release-candidates dependencies allows testing plugin against future Gradle versions.
 
-However, it doesn't make sense to publish old RC versions, so it's decided to publish only active RC version, if there is one at the moment of build.
+However, it doesn't make sense to publish old RC versions, so it's decided to publish only active RC version,
+if there is one at the moment of build.
 
 ### MUST check for new Gradle versions automatically
 
@@ -90,7 +101,8 @@ Currently, it's configured to run this job once a day.
 
 ### MUST follow native Gradle separation of `localGroovy`, `gradleApi` and `gradleTestKit` dependencies
 
-Published artifacts MUST follow native Gradle separation of `localGroovy`, `gradleApi` and `gradleTestKit` dependencies, as it's expected by plugin authors.
+Published artifacts MUST follow native Gradle separation of `localGroovy`, `gradleApi` and `gradleTestKit` dependencies,
+as it's expected by plugin authors.
 
 ### MUST provide correct transitive Gradle native dependencies
 
@@ -106,8 +118,10 @@ Such classes SHOULD be removed from published artifacts and such dependencies sh
 
 ### MUST publish Gradle API sources JARs
 
-As it's much harder to develop a Java project with dependencies without published sources, sources JARs MUST be published for all published artifacts.
+As it's much harder to develop a Java project with dependencies without published sources,
+sources JARs MUST be published for all published artifacts.
 
 ### SHOULD publish sources of only used classes
 
-`all` distribution provides sources for much more classes, than used in Gradle API. Unused sources SHOULD be removed to reduce sources JAR size.
+`all` distribution provides sources for much more classes, than used in Gradle API.
+Unused sources SHOULD be removed to reduce sources JAR size.
