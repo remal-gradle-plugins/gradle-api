@@ -52,7 +52,7 @@ jobs:
           gradle:
             dependency: gradle-wrapper
             only:
-            - stable-majors+current-unstable
+            - stable-minors+current-unstable
             include:
             - '[${{steps.min-gradle-version.outputs.value}},)'
     - name: Get all versions to test
