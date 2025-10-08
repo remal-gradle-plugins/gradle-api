@@ -73,6 +73,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+    - name: Setup Java
+      uses: actions/setup-java@v5
+      with:
+        distribution: temurin
+        java-version: |
+          25
+          17
+          8
+
     - name: Checkout repository
       uses: actions/checkout@v5
 

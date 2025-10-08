@@ -2,12 +2,22 @@ plugins {
     `java-library`
     `java-gradle-plugin`
     id("name.remal.lombok") version "3.1.3"
+    id("name.remal.generate-sources") version "2.0.1"
 }
 
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
     }
+}
+
+generateSources.forMainSourceSet.java {
+    var toolchainLanguageVersion = objects.property<JavaLanguageVersion>().value(
+        java.toolchain.languageVersion
+    ).let { it.finalizeValueOnRead(); it }
+    inputs.property("toolchainLanguageVersion", toolchainLanguageVersion)
+
+
 }
 
 val allConstraints by configurations.creating conf@{
@@ -37,6 +47,7 @@ dependencies {
 }
 
 tasks.withType<JavaCompile>().configureEach {
+    options.release = java.toolchain.languageVersion.map(JavaLanguageVersion::asInt)
     options.encoding = "UTF-8"
     options.isDeprecation = true
     options.compilerArgs.addAll(listOf(

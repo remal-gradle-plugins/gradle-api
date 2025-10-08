@@ -58,7 +58,7 @@ Unfortunately, Gradle team doesn't publish Gradle API artifacts somewhere, so pl
 * You can't run unit and functional tests against Gradle version different from Gradle installation.
 * You can't use build the project with Gradle API dependencies of version different from Gradle installation.
 * If you use `bin` distribution, you don't have access to sources.
-* Even if you use `all` distribution, sometimes IDE (Intellij IDEA) fails attaching sources to Gradle API dependencies.
+* Even if you use `all` distribution, sometimes IDE (IntelliJ IDEA) fails attaching sources to Gradle API dependencies.
 
 All these issues can be eliminated by publishing Gradle API artifacts to some Maven repository, and use them as external dependencies. This project does exactly that.
 
