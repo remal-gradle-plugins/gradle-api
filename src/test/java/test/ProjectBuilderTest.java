@@ -10,6 +10,7 @@ import java.io.IOException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.testfixtures.ProjectBuilder;
+import org.gradle.util.GradleVersion;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -37,16 +38,26 @@ class ProjectBuilderTest {
 
     @Test
     void applyJavaPluginAndResolveDependency() {
+        GradleVersion baseGradleVersion = GradleVersion.current().getBaseVersion();
+
         Project project = createProject(projectDir);
         project.getPluginManager().apply("java");
         project.getRepositories().mavenCentral();
 
-        Configuration depsConf = project.getConfigurations().getByName("testImplementation");
+        Configuration depsConf = project.getConfigurations().getByName(
+            baseGradleVersion.compareTo(GradleVersion.version("3.4")) >= 0
+                ? "testImplementation"
+                : "compile"
+        );
         depsConf.getDependencies().add(
             project.getDependencies().create("junit:junit:4.13.2")
         );
 
-        Configuration resolvableConf = project.getConfigurations().getByName("testCompileClasspath");
+        Configuration resolvableConf = project.getConfigurations().getByName(
+            baseGradleVersion.compareTo(GradleVersion.version("3.4")) >= 0
+                ? "testCompileClasspath"
+                : "compile"
+        );
         assertDoesNotThrow(resolvableConf::getFiles);
         assertThat(resolvableConf.getFiles()).isNotEmpty();
     }

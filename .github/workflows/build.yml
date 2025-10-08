@@ -44,7 +44,7 @@ jobs:
         file: gradle.properties
         property: 'gradle.min-version'
     - name: Read max supported Gradle version
-      id: min-gradle-version
+      id: max-gradle-version
       uses: remal-github-actions/read-property@v1
       with:
         file: gradle.properties

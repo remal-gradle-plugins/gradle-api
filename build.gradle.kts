@@ -39,6 +39,12 @@ dependencies {
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 
+    val expectedGradleVersion = buildLogic.gradleVersion
+    onlyIf { _ ->
+        environment("EXPECTED_GRADLE_VERSION", expectedGradleVersion.get())
+        return@onlyIf true
+    }
+
     testLogging {
         events("PASSED", "SKIPPED", "FAILED")
     }
