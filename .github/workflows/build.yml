@@ -45,23 +45,52 @@ jobs:
         property: 'gradle.min-version'
 
     - name: Get draft versions to test
-      id: test-versions-draft
+      id: test-versions-matrix
       uses: remal-github-actions/matrix-versions@v1
       with:
         matrix: |
           gradle:
             dependency: gradle-wrapper
             only:
-            - stable-minors+current-unstable
+            - stable-majors+current-unstable
             include:
             - '[${{steps.min-gradle-version.outputs.value}},)'
     - name: Get all versions to test
       id: test-versions
       env:
-        MATRIX: ${{steps.test-versions-draft.outputs.allMatrixIncludes}}
+        MATRIX: ${{steps.test-versions-matrix.outputs.allMatrixIncludes}}
       run: |
         MATRIX=$(jq -c '. += [{"gradle": "${{steps.min-gradle-version.outputs.value}}"}]' <<<"$MATRIX")
         echo "matrix=$MATRIX" | tee -a $GITHUB_OUTPUT
+
+    - name: Get published versions
+      id: published-versions-matrix
+      uses: remal-github-actions/matrix-versions@v1
+      with:
+        batchLimit: 100000
+        allowEmptyResult: true
+        matrix: |
+          gradle:
+            dependency: 'maven:name.remal.gradle-api:gradle-api'
+            repositories:
+            - 'https://maven.pkg.github.com/remal-gradle-api/packages'
+    - name: Get published versions JSON array
+      id: published-versions-array
+      env:
+        MATRIX: ${{steps.published-versions-matrix.outputs.allMatrixIncludes}}
+      run: |
+        JSON_ARRAY=$(jq -c '[.[] | .gradle]' <<<"$MATRIX")
+        echo "json-array=$JSON_ARRAY" | tee -a $GITHUB_OUTPUT
+    - name: Get versions to publish
+      id: publish-versions
+      uses: remal-github-actions/matrix-versions@v1
+      with:
+        matrix: |
+          gradle:
+            dependency: gradle-wrapper
+            only:
+            - stable+current-unstable
+            exclude: ${{steps.published-versions-array.outputs.json-array}}
 
   build:
     needs:
