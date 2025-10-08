@@ -66,15 +66,11 @@ All these issues can be eliminated by publishing Gradle API artifacts to some Ma
 
 The requirement level keywords "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" used in this document (case insensitive) are to be interpreted as described in [RFC 2119](https://www.ietf.org/rfc/rfc2119.txt).
 
-### MUST publish artifacts for all Gradle release versions greater than 3.0
+### MUST publish artifacts for all Gradle release versions greater than 2.6
 
-Artifacts for all Gradle release versions greater than 3.0 MUST be published.
-
-Version 3.0 was chosen as a compromise between maximum Gradle versions support and difficulty of artifacts extraction.
+Artifacts for all Gradle release versions greater than 2.6 MUST be published.
 
 The project uses Gradle Test Kit to download Gradle distributions and extract artifacts. Gradle Test Kit [requires](https://docs.gradle.org/current/userguide/third_party_integration.html#sec:embedding_compatibility) at least Gradle 2.6.
-
-As `FilteringClassLoader` dependency is used to cut down Gradle API dependencies, the extraction process requires at least Gradle 3.0.
 
 ### SHOULD publish artifacts for release-candidates Gradle versions
 
