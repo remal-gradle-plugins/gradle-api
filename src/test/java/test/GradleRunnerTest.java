@@ -55,12 +55,17 @@ class GradleRunnerTest {
             properties.store(out, null);
         }
 
-        GradleRunner runner = GradleRunner.create()
-            .withProjectDir(projectDir)
-            .forwardOutput()
-            .withGradleVersion(GradleVersion.current().getVersion())
+        GradleRunner runner = createGradleRunner(projectDir)
             .withArguments("help");
         assertDoesNotThrow(runner::build);
+    }
+
+
+    private static GradleRunner createGradleRunner(File projectDir) {
+        return GradleRunner.create()
+            .withProjectDir(projectDir)
+            .forwardOutput()
+            .withGradleVersion(GradleVersion.current().getVersion());
     }
 
 }

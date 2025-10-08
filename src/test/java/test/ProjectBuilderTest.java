@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.io.CleanupMode.NEVER;
 import java.io.File;
 import java.io.IOException;
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.testfixtures.ProjectBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -29,11 +30,26 @@ class ProjectBuilderTest {
 
     @Test
     void applyJavaPlugin() {
-        Project project = ProjectBuilder.builder()
+        Project project = createProject(projectDir);
+        assertDoesNotThrow(() -> project.getPluginManager().apply("java"));
+    }
+
+    @Test
+    void applyJavaPluginAndResolveDependency() {
+        Project project = createProject(projectDir);
+        project.getPluginManager().apply("java");
+        project.getRepositories().mavenCentral();
+        Configuration conf = project.getConfigurations().getByName("testImplementation");
+        project.getDependencies().add(conf.getName(), "junit:junit:4.13.2");
+        assertDoesNotThrow(conf::getFiles);
+    }
+
+
+    private static Project createProject(File projectDir) {
+        return ProjectBuilder.builder()
             .withProjectDir(projectDir)
             .withName(projectDir.getName())
             .build();
-        assertDoesNotThrow(() -> project.getPluginManager().apply("java"));
     }
 
 }

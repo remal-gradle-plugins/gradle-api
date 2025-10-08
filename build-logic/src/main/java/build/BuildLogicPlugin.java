@@ -15,6 +15,7 @@ import build.tasks.ProcessModuleRegistry;
 import build.tasks.PublishArtifactsToLocalBuildRepository;
 import build.tasks.VerifyPublishedArtifactsToLocalBuildRepository;
 import build.utils.DependenciesInjectable;
+import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
 import org.gradle.api.Plugin;
@@ -30,7 +31,9 @@ import org.gradle.api.tasks.testing.AbstractTestTask;
 import org.gradle.api.tasks.testing.Test;
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat;
 import org.gradle.api.tasks.testing.logging.TestStackTraceFilter;
+import org.gradle.jvm.toolchain.JavaInstallationMetadata;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
+import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.util.GradleVersion;
 
@@ -54,71 +57,13 @@ public abstract class BuildLogicPlugin implements Plugin<Project> {
 
 
         project.getPluginManager().apply("java-library");
+        applyBasicJavaSettings(project);
 
-        var javaExtension = project.getExtensions().getByType(JavaPluginExtension.class);
-        javaExtension.getToolchain().getLanguageVersion().set(
-            JavaLanguageVersion.of(25) // TODO: generate
-        );
-
-        getRepositories().mavenCentral();
-
-        var allConstraints = getConfigurations().dependencyScope("allConstraints");
-        getConfigurations()
-            .matching(Configuration::isCanBeResolved)
-            .configureEach(otherConf -> {
-                otherConf.extendsFrom(allConstraints.get());
-            });
-
-        getTasks().withType(JavaCompile.class).configureEach(task -> {
-            task.getOptions().getRelease().set(FALLBACK_JAVA_VERSION.asInt());
-            task.getOptions().setEncoding(UTF_8.name());
-            task.getOptions().setDeprecation(true);
-            task.getOptions().getCompilerArgs().addAll(List.of(
-                "-parameters",
-                "-Werror",
-                "-Xlint:all",
-                "-Xlint:-rawtypes",
-                "-Xlint:-serial",
-                "-Xlint:-processing",
-                "-Xlint:-this-escape",
-                "-Xlint:-options"
-            ));
-        });
 
         getTasks().withType(Test.class).configureEach(task -> {
             task.getJavaLauncher().set(getJavaToolchainService().launcherFor(spec -> {
                 spec.getLanguageVersion().set(gradleJvmVersion);
             }));
-
-            // see https://github.com/gradle/gradle/issues/18647
-            task.getJvmArgumentProviders().add(() -> {
-                if (gradleJvmVersion.get().asInt() >= 9) {
-                    return List.of(
-                        "--add-opens=java.base/java.lang=ALL-UNNAMED"
-                    );
-                }
-                return List.of();
-            });
-
-            // see https://github.com/gradle/gradle/issues/31625
-            task.getJvmArgumentProviders().add(() -> {
-                if (gradleJvmVersion.get().asInt() >= 24) {
-                    return List.of(
-                        "--enable-native-access=ALL-UNNAMED"
-                    );
-                }
-                return List.of();
-            });
-
-            task.setEnableAssertions(true);
-
-            task.testLogging(logging -> {
-                logging.setShowExceptions(true);
-                logging.setShowCauses(true);
-                logging.setShowStackTraces(true);
-                logging.setExceptionFormat(TestExceptionFormat.FULL);
-                logging.stackTraceFilters(TestStackTraceFilter.GROOVY);
-            });
         });
 
 
@@ -245,6 +190,67 @@ public abstract class BuildLogicPlugin implements Plugin<Project> {
         getTasks().register("last-task", task -> {
             task.setGroup("gradle-api");
             task.dependsOn(verifyPublishedArtifactsToLocalBuildRepository);
+        });
+    }
+
+    private void applyBasicJavaSettings(Project project) {
+        project.getExtensions().getByType(JavaPluginExtension.class).getToolchain().getLanguageVersion().set(
+            JavaLanguageVersion.of(25) // TODO: generate
+        );
+
+        getRepositories().mavenCentral();
+
+        var allConstraints = getConfigurations().dependencyScope("allConstraints");
+        getConfigurations()
+            .matching(Configuration::isCanBeResolved)
+            .configureEach(otherConf -> {
+                otherConf.extendsFrom(allConstraints.get());
+            });
+
+        getTasks().withType(JavaCompile.class).configureEach(task -> {
+            task.getOptions().getRelease().set(FALLBACK_JAVA_VERSION.asInt());
+            task.getOptions().setEncoding(UTF_8.name());
+            task.getOptions().setDeprecation(true);
+            task.getOptions().getCompilerArgs().addAll(List.of(
+                "-parameters",
+                "-Werror",
+                "-Xlint:all",
+                "-Xlint:-rawtypes",
+                "-Xlint:-serial",
+                "-Xlint:-processing",
+                "-Xlint:-this-escape",
+                "-Xlint:-options"
+            ));
+        });
+
+        getTasks().withType(Test.class).configureEach(task -> {
+            task.getJvmArgumentProviders().add(() -> {
+                var args = new ArrayList<String>();
+                var javaVersion = task.getJavaLauncher()
+                    .map(JavaLauncher::getMetadata)
+                    .map(JavaInstallationMetadata::getLanguageVersion)
+                    .map(JavaLanguageVersion::asInt)
+                    .get();
+                if (javaVersion >= 9) {
+                    // see https://github.com/gradle/gradle/issues/18647
+                    args.add("--add-opens=java.base/java.lang=ALL-UNNAMED");
+                }
+                if (javaVersion >= 24) {
+                    // see https://github.com/gradle/gradle/issues/31625
+                    args.add("--enable-native-access=ALL-UNNAMED");
+                }
+                return args;
+            });
+
+            task.setEnableAssertions(true);
+
+            task.testLogging(logging -> {
+                logging.setShowExceptions(true);
+                logging.setShowCauses(true);
+                logging.setShowStackTraces(true);
+                logging.setExceptionFormat(TestExceptionFormat.FULL);
+                logging.stackTraceFilters(TestStackTraceFilter.GROOVY);
+            });
         });
     }
 

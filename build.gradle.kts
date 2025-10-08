@@ -6,14 +6,13 @@ plugins {
 }
 
 
-if (false) {
-    tasks.withType<ExtractGradleFiles>().configureEach { onlyIf { false } }
-    tasks.withType<PublishArtifactsToLocalBuildRepository>().configureEach { onlyIf { false } }
-}
+tasks.withType<ExtractGradleFiles>().configureEach { onlyIf { _ -> true } }
+tasks.withType<PublishArtifactsToLocalBuildRepository>().configureEach { onlyIf { _ -> true } }
 
 
 buildLogic {
     project.findProperty("gradle.version")?.toString()?.ifEmpty { null }?.run { gradleVersion = this }
+
     license license@{
         this@license.name = "MIT License"
         this@license.url = "https://choosealicense.com/licenses/mit/"

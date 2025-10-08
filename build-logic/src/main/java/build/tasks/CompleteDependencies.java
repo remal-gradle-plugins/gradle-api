@@ -24,6 +24,7 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
         .put("kotlin", "org.jetbrains.kotlin")
         .put("ant", "org.apache.ant")
         .put("jspecify", "org.jspecify")
+        .put("jsr305", "com.google.code.findbugs")
         .put("javax.inject", "javax.inject")
         .put("xml-apis", "xml-apis")
         .put("asm", "org.ow2.asm")
@@ -96,11 +97,6 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
             if (group != null) {
                 depId.setGroup(group);
             }
-
-            var version = properties.getProperty("version");
-            if (version != null) {
-                depId.setVersion(version);
-            }
         }
     }
 
@@ -134,7 +130,9 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
         }
 
         if (depNamePrefix.startsWith("groovy-")) {
-            if (compareVersions(depId.getVersion(), "4") >= 0) {
+            if (depId.getVersion().startsWith("1.3-2.")) {
+                depId.setGroup(GRADLE_API_PUBLISH_GROUP); // some prebuilt groovy from Gradle
+            } else if (compareVersions(depId.getVersion(), "4") >= 0) {
                 depId.setGroup("org.apache.groovy");
             } else {
                 depId.setGroup("org.codehaus.groovy");
