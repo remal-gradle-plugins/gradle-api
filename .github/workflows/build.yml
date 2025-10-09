@@ -139,7 +139,7 @@ jobs:
       id: publish-versions-exclusions
       env:
         EXCLUSIONS_1: ${{steps.published-versions-array.outputs.json-array}}
-        EXCLUSIONS_2: ${{steps.old-unstable-versions-array.outputs.json
+        EXCLUSIONS_2: ${{steps.old-unstable-versions-array.outputs.json-array}}
       run: |
         JSON_ARRAY=$(jq -c -s 'add | unique' <<<"$EXCLUSIONS_1"$'\n'"$EXCLUSIONS_2")
         echo "json-array=$JSON_ARRAY" | tee -a $GITHUB_OUTPUT
