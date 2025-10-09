@@ -15,6 +15,7 @@ import com.google.common.net.MediaType;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpClient.Redirect;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
@@ -102,7 +103,12 @@ public abstract class PublishArtifacts extends AbstractBuildLogicTask
             getRepository().getPassword().get()
         ).getBytes(UTF_8));
 
-        try (var httpClient = HttpClient.newHttpClient()) {
+        try (
+            var httpClient = HttpClient.newBuilder()
+                .followRedirects(Redirect.NORMAL)
+                .connectTimeout(Duration.ofSeconds(5))
+                .build()
+        ) {
             var headRequest = HttpRequest.newBuilder(uri)
                 .header("Authorization", "Basic " + auth)
                 .HEAD()
