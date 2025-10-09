@@ -9,6 +9,9 @@ on:
   schedule:
   - cron: '13/15 * * * *'
 
+permissions:
+  contents: read
+
 concurrency:
   group: build-${{github.ref}}
   cancel-in-progress: false
