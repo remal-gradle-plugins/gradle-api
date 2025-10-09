@@ -72,6 +72,7 @@ jobs:
         echo "matrix=$MATRIX" | tee -a $GITHUB_OUTPUT
 
     - name: Get published versions
+      if: ${{github.ref == 'refs/heads/main'}}
       id: published-versions-matrix
       uses: remal-github-actions/matrix-versions@v1
       with:
@@ -83,6 +84,7 @@ jobs:
             repositories:
             - 'https://maven.pkg.github.com/remal-gradle-api/packages'
     - name: Get published versions JSON array
+      if: ${{github.ref == 'refs/heads/main'}}
       id: published-versions-array
       env:
         MATRIX: ${{steps.published-versions-matrix.outputs.allMatrixIncludes}}
@@ -90,7 +92,7 @@ jobs:
         JSON_ARRAY=$(jq -c '[.[] | .gradle]' <<<"$MATRIX")
         echo "json-array=$JSON_ARRAY" | tee -a $GITHUB_OUTPUT
     - name: Get versions to publish
-      if: ${{true}}
+      if: ${{github.ref == 'refs/heads/main'}}
       id: publish-versions
       uses: remal-github-actions/matrix-versions@v1
       with:
@@ -140,7 +142,7 @@ jobs:
         ./gradlew-retry-connection-timeouts build "-Pgradle.version=${{matrix.gradle}}"
 
     - name: Publish
-      if: ${{github.ref == 'refs/heads/main' && needs.prepare.outputs.publish-matrix-includes != '[]'}}
+      if: ${{needs.prepare.outputs.publish-matrix-includes != '[]'}}
       run: |
         ./gradlew-retry-connection-timeouts publishArtifacts "-Pgradle.version=${{matrix.gradle}}"
 
