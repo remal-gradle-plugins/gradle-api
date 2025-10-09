@@ -94,6 +94,55 @@ jobs:
       run: |
         JSON_ARRAY=$(jq -c '[.[] | .gradle]' <<<"$MATRIX")
         echo "json-array=$JSON_ARRAY" | tee -a $GITHUB_OUTPUT
+    - name: Get stable versions matrix
+      if: ${{github.ref == 'refs/heads/main'}}
+      id: stable-versions-matrix
+      uses: remal-github-actions/matrix-versions@v1
+      with:
+        elementsPerBatch: 99999
+        allowEmptyResult: true
+        matrix: |
+          gradle:
+            dependency: 'maven:name.remal.gradle-api:gradle-api'
+            repositories:
+            - 'https://maven.pkg.github.com/remal-gradle-api/packages'
+            only:
+            - stable
+            include:
+            - '[${{steps.min-gradle-version.outputs.value}},${{steps.max-gradle-version.outputs.value}}.9999)'
+    - name: Get old unstable versions matrix
+      if: ${{github.ref == 'refs/heads/main'}}
+      id: old-unstable-versions-matrix
+      uses: remal-github-actions/matrix-versions@v1
+      with:
+        elementsPerBatch: 99999
+        allowEmptyResult: true
+        matrix: |
+          gradle:
+            dependency: 'maven:name.remal.gradle-api:gradle-api'
+            repositories:
+            - 'https://maven.pkg.github.com/remal-gradle-api/packages'
+            only:
+            - unstable
+            include:
+            - '[${{steps.min-gradle-version.outputs.value}},${{fromJSON(steps.stable-versions-matrix.outputs.allMatrixIncludes)[0].gradle}}]'
+    - name: Convert old unstable versions matrix to a JSON array
+      if: ${{github.ref == 'refs/heads/main'}}
+      id: old-unstable-versions-array
+      env:
+        MATRIX: ${{steps.old-unstable-versions-matrix.outputs.allMatrixIncludes}}
+      run: |
+        JSON_ARRAY=$(jq -c '[.[] | .gradle]' <<<"$MATRIX")
+        echo "json-array=$JSON_ARRAY" | tee -a $GITHUB_OUTPUT
+    - name: Compose versions to publish exclusions
+      if: ${{github.ref == 'refs/heads/main'}}
+      id: publish-versions-exclusions
+      env:
+        EXCLUSIONS_1: ${{steps.published-versions-array.outputs.json-array}}
+        EXCLUSIONS_2: ${{steps.old-unstable-versions-array.outputs.json
+      run: |
+        JSON_ARRAY=$(jq -c -s 'add | unique' <<<"$EXCLUSIONS_1"$'\n'"$EXCLUSIONS_2")
+        echo "json-array=$JSON_ARRAY" | tee -a $GITHUB_OUTPUT
     - name: Get versions to publish
       if: ${{github.ref == 'refs/heads/main'}}
       id: publish-versions
@@ -108,7 +157,12 @@ jobs:
             include:
             - /^\d(\.\d)*(-rc-?\d*)?$/i
             - '[${{steps.min-gradle-version.outputs.value}},${{steps.max-gradle-version.outputs.value}}.9999)'
-            exclude: ${{steps.published-versions-array.outputs.json-array}}
+            exclude: ${{steps.publish-versions-exclusions.outputs.json-array}}
+    - name: debug
+      if: ${{github.ref == 'refs/heads/main'}}
+      env:
+        PUBLISH_MATRIX: ${{steps.publish-versions.outputs.allMatrixIncludes}}
+      run: exit 1
 
 
   build:
