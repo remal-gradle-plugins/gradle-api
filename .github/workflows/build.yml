@@ -71,6 +71,7 @@ jobs:
       env:
         MATRIX: ${{steps.test-versions-matrix.outputs.allMatrixIncludes}}
       run: |
+        echo Getting all versions to test
         MATRIX=$(jq -c '. += [{"gradle": "${{steps.min-gradle-version.outputs.value}}"}]' <<<"$MATRIX")
         echo "matrix=$MATRIX" | tee -a $GITHUB_OUTPUT
 
@@ -92,6 +93,7 @@ jobs:
       env:
         MATRIX: ${{steps.published-versions-matrix.outputs.allMatrixIncludes}}
       run: |
+        echo Converting published versions matrix to a JSON array
         JSON_ARRAY=$(jq -c '[.[] | .gradle]' <<<"$MATRIX")
         echo "json-array=$JSON_ARRAY" | tee -a $GITHUB_OUTPUT
     - name: Get stable versions matrix
@@ -132,6 +134,7 @@ jobs:
       env:
         MATRIX: ${{steps.old-unstable-versions-matrix.outputs.allMatrixIncludes}}
       run: |
+        echo Converting old unstable versions matrix to a JSON array
         JSON_ARRAY=$(jq -c '[.[] | .gradle]' <<<"$MATRIX")
         echo "json-array=$JSON_ARRAY" | tee -a $GITHUB_OUTPUT
     - name: Compose versions to publish exclusions
@@ -141,6 +144,7 @@ jobs:
         EXCLUSIONS_1: ${{steps.published-versions-array.outputs.json-array}}
         EXCLUSIONS_2: ${{steps.old-unstable-versions-array.outputs.json-array}}
       run: |
+        echo Composing versions to publish exclusions
         JSON_ARRAY=$(jq -c -s 'add | unique' <<<"$EXCLUSIONS_1"$'\n'"$EXCLUSIONS_2")
         echo "json-array=$JSON_ARRAY" | tee -a $GITHUB_OUTPUT
     - name: Get versions to publish
