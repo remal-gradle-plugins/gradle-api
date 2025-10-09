@@ -1,3 +1,0 @@
-rootProject.name = 'gradle-api'
-
-apply from: 'gradle/include/settings.gradle'

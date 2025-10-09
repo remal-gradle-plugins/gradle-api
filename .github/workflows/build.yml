@@ -1,0 +1,161 @@
+name: build
+
+on:
+  push:
+    branches:
+    - main
+    - 'test/*'
+  pull_request: { }
+  schedule:
+  - cron: '13/15 * * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{github.ref}}
+  cancel-in-progress: ${{github.ref != 'refs/heads/main'}}
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.parallel=true -Dorg.gradle.workers.max=4 -Dorg.gradle.warning.mode=all -Dorg.gradle.logging.stacktrace=all -Dorg.gradle.daemon=true -Dhttp.keepAlive=false -Dsun.net.client.defaultConnectTimeout=15000 -Dsun.net.client.defaultReadTimeout=600000 -Dsun.net.http.retryPost=false -Dsun.io.useCanonCaches=false -Djava.awt.headless=true -Dorg.gradle.internal.launcher.welcomeMessageEnabled=false
+
+jobs:
+  prepare:
+    outputs:
+      build-matrix-includes: ${{steps.test-versions.outputs.matrix}}
+      publish-matrix-includes: ${{steps.publish-versions.outputs.batchMatrixIncludes1 || '[]'}}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v5
+
+    - name: Validate Gradle Wrapper
+      uses: Wandalen/wretry.action/main@v3.8.0
+      with:
+        action: gradle/actions/wrapper-validation@v5
+        attempt_limit: 3
+        attempt_delay: 5000
+
+    - name: Read min supported Gradle version
+      id: min-gradle-version
+      uses: remal-github-actions/read-property@v1
+      with:
+        file: gradle.properties
+        property: 'gradle.min-version'
+    - name: Read max supported Gradle version
+      id: max-gradle-version
+      uses: remal-github-actions/read-property@v1
+      with:
+        file: gradle.properties
+        property: 'gradle.max-version'
+
+    - name: Get draft versions to test
+      id: test-versions-matrix
+      uses: remal-github-actions/matrix-versions@v1
+      with:
+        matrix: |
+          gradle:
+            dependency: gradle-wrapper
+            only:
+            - stable-majors+current-unstable
+            include:
+            - /^\d(\.\d)*(-rc-?\d*)?$/i
+            - '[${{steps.min-gradle-version.outputs.value}},${{steps.max-gradle-version.outputs.value}}.9999)'
+    - name: Get all versions to test
+      id: test-versions
+      env:
+        MATRIX: ${{steps.test-versions-matrix.outputs.allMatrixIncludes}}
+      run: |
+        MATRIX=$(jq -c '. += [{"gradle": "${{steps.min-gradle-version.outputs.value}}"}]' <<<"$MATRIX")
+        echo "matrix=$MATRIX" | tee -a $GITHUB_OUTPUT
+
+    - name: Get published versions matrix
+      if: ${{github.ref == 'refs/heads/main'}}
+      id: published-versions-matrix
+      uses: remal-github-actions/matrix-versions@v1
+      with:
+        elementsPerBatch: 99999
+        allowEmptyResult: true
+        matrix: |
+          gradle:
+            dependency: 'maven:name.remal.gradle-api:gradle-api'
+            repositories:
+            - 'https://maven.pkg.github.com/remal-gradle-api/packages'
+    - name: Convert published versions matrix to a JSON array
+      if: ${{github.ref == 'refs/heads/main'}}
+      id: published-versions-array
+      env:
+        MATRIX: ${{steps.published-versions-matrix.outputs.allMatrixIncludes}}
+      run: |
+        JSON_ARRAY=$(jq -c '[.[] | .gradle]' <<<"$MATRIX")
+        echo "json-array=$JSON_ARRAY" | tee -a $GITHUB_OUTPUT
+    - name: Get versions to publish
+      if: ${{github.ref == 'refs/heads/main'}}
+      id: publish-versions
+      uses: remal-github-actions/matrix-versions@v1
+      with:
+        allowEmptyResult: true
+        matrix: |
+          gradle:
+            dependency: gradle-wrapper
+            only:
+            - stable+current-unstable
+            include:
+            - '[${{steps.min-gradle-version.outputs.value}},${{steps.max-gradle-version.outputs.value}}.9999)'
+            exclude: ${{steps.published-versions-array.outputs.json-array}}
+
+
+  build:
+    needs:
+    - prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{fromJSON(needs.prepare.outputs.publish-matrix-includes != '[]' && needs.prepare.outputs.publish-matrix-includes || needs.prepare.outputs.build-matrix-includes)}}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - name: Dump
+      env:
+        VALUE: ${{needs.prepare.outputs.publish-matrix-includes}}
+        VALUE_TO_BOOL: ${{needs.prepare.outputs.publish-matrix-includes != '[]'}}
+      run: |
+        echo "VALUE=$VALUE"
+        echo "VALUE_TO_BOOL=$VALUE_TO_BOOL"
+
+    - name: Setup Java
+      uses: actions/setup-java@v5
+      with:
+        distribution: temurin
+        java-version: |
+          25
+          17
+          8
+
+    - name: Checkout repository
+      uses: actions/checkout@v5
+
+    - name: Build
+      run: |
+        ./gradlew-retry-connection-timeouts build "-Pgradle.version=${{matrix.gradle}}"
+
+    - name: Publish
+      if: ${{needs.prepare.outputs.publish-matrix-includes != '[]'}}
+      run: |
+        ./gradlew-retry-connection-timeouts publishArtifacts "-Pgradle.version=${{matrix.gradle}}"
+
+
+  build-success:
+    needs:
+    - build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+    - name: Display success message
+      run: |
+        echo "The project has been built successfully"

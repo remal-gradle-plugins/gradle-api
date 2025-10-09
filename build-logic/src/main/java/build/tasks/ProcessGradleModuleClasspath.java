@@ -1,0 +1,93 @@
+package build.tasks;
+
+import static build.utils.GradleModuleClasspathUtils.getGradleClasspathModules;
+import static build.utils.ZipUtils.getZipFileEntryNames;
+import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static java.nio.file.Files.isRegularFile;
+
+import build.dto.GradleDependencies;
+import build.dto.GradleDependencyInfo;
+import java.util.Collection;
+import java.util.List;
+import java.util.regex.Pattern;
+import org.gradle.api.tasks.CacheableTask;
+
+@CacheableTask
+public abstract class ProcessGradleModuleClasspath extends AbstractMappingDependenciesInfoTask {
+
+    private static final Pattern LIB_FILE_PATTERN = Pattern.compile("\\.(so|dll|[^.]*lib)$");
+
+    @Override
+    protected GradleDependencies mapGradleDependencies(GradleDependencies gradleDependencies) {
+        var gradleFilesDir = getGradleFilesDirectory().getAsFile().get().toPath();
+
+        for (var depInfo : List.copyOf(gradleDependencies.getDependencies().values())) {
+            var path = depInfo.getPath();
+            if (path == null) {
+                continue;
+            }
+
+            var file = getProjectRelativeFile(path);
+            var isGradleFile = file.getName().startsWith("gradle-");
+            if (!isGradleFile) {
+                continue;
+            }
+
+            var essentialEntryNames = getZipFileEntryNames(file).stream()
+                .filter(it ->
+                    (it.endsWith(".class") && !it.equals("module-info.class") && !it.endsWith("/module-info.class"))
+                        || LIB_FILE_PATTERN.matcher(it).find()
+                )
+                .collect(toImmutableSet());
+
+            var modules = getGradleClasspathModules(file);
+            var moduleDepPaths = modules.values().stream()
+                .flatMap(info -> info.scopePaths().values().stream())
+                .flatMap(Collection::stream)
+                .filter(it -> it.endsWith(".jar"))
+                .collect(toImmutableSet());
+            for (var moduleDepPath : moduleDepPaths) {
+                var moduleDepPathPrefix = '/' + moduleDepPath;
+                if (moduleDepPathPrefix.startsWith("/gradle-")
+                    || moduleDepPathPrefix.startsWith("/groovy-")
+                    || moduleDepPathPrefix.startsWith("/kotlin-")
+                    || moduleDepPathPrefix.startsWith("/native-platform-")
+                    || moduleDepPathPrefix.startsWith("/file-events-")
+                    || moduleDepPathPrefix.startsWith("/jansi-")
+                ) {
+                    continue;
+                }
+
+                var baseDir = file.toPath().getParent();
+                if (file.getParentFile().toPath().equals(gradleFilesDir)) {
+                    baseDir = baseDir.resolve("lib");
+                }
+                var moduleDepFile = baseDir.resolve(moduleDepPath);
+                if (!isRegularFile(moduleDepFile)) {
+                    continue;
+                }
+
+                var moduleFileEntryNames = getZipFileEntryNames(moduleDepFile.toFile());
+                var moduleEntriesIncludedIntoFile = moduleFileEntryNames.stream()
+                    .filter(essentialEntryNames::contains)
+                    .toList();
+                if (moduleEntriesIncludedIntoFile.isEmpty()) {
+                    continue;
+                }
+
+                var moduleDepId = gradleDependencies.getDependencyIdByPathOrName(moduleDepFile);
+                depInfo.getDependencies().add(moduleDepId);
+
+                if (!gradleDependencies.getDependencies().containsKey(moduleDepId)) {
+                    var moduleDepInfo = new GradleDependencyInfo();
+                    moduleDepInfo.setPath(getProjectFileRelativePath(moduleDepFile));
+
+                    gradleDependencies.getDependencies().put(moduleDepId, moduleDepInfo);
+                }
+            }
+        }
+
+        return gradleDependencies;
+    }
+
+}
