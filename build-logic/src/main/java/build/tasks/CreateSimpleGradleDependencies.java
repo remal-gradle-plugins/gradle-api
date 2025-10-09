@@ -33,14 +33,14 @@ public abstract class CreateSimpleGradleDependencies extends AbstractProducingDe
         );
 
         rawDeps.getDependencies().forEach((methodName, paths) -> {
-            var depId = result.getGradleDependencyIdByMethodName(methodName);
+            var depId = result.getDependencyIdByMethodName(methodName);
             var depInfo = new GradleDependencyInfo();
             depInfo.setRoot(true);
             result.getDependencies().put(depId, depInfo);
 
 
             for (var path : paths) {
-                var pathDepId = result.getGradleDependencyIdByPathOrName(path);
+                var pathDepId = result.getDependencyIdByPathOrName(path);
                 if (pathDepId.equals(depId)) {
                     if (depInfo.getPath() == null) {
                         depInfo.setPath(path);
@@ -57,7 +57,7 @@ public abstract class CreateSimpleGradleDependencies extends AbstractProducingDe
         rawDeps.getDependencies().values().stream()
             .flatMap(Collection::stream)
             .forEach(path -> {
-                var id = result.getGradleDependencyIdByPathOrName(path);
+                var id = result.getDependencyIdByPathOrName(path);
                 if (!result.getDependencies().containsKey(id)) {
                     var info = new GradleDependencyInfo();
                     info.setPath(path);

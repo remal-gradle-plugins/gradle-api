@@ -112,7 +112,7 @@ public class GradleDependencies implements JsonHooks {
         return oldId != null ? oldId : id;
     }
 
-    public GradleDependencyId getGradleDependencyIdByPathOrName(String pathOrName) {
+    public GradleDependencyId getDependencyIdByPathOrName(String pathOrName) {
         final String fileName;
         if (pathOrName.endsWith(".jar")) {
             fileName = new File(pathOrName).getName();
@@ -124,24 +124,24 @@ public class GradleDependencies implements JsonHooks {
         return internGradleDependencyId(id);
     }
 
-    public GradleDependencyId getGradleDependencyIdByPathOrName(Path path) {
-        return getGradleDependencyIdByPathOrName(path.getFileName().toString());
+    public GradleDependencyId getDependencyIdByPathOrName(Path path) {
+        return getDependencyIdByPathOrName(path.getFileName().toString());
     }
 
-    public GradleDependencyId getGradleDependencyIdByPathOrName(File file) {
-        return getGradleDependencyIdByPathOrName(file.getName());
+    public GradleDependencyId getDependencyIdByPathOrName(File file) {
+        return getDependencyIdByPathOrName(file.getName());
     }
 
-    public GradleDependencyId getGradleDependencyIdByPathOrName(String pathOrName, String version, String group) {
-        var id = getGradleDependencyIdByPathOrName(pathOrName);
+    public GradleDependencyId getDependencyIdByPathOrName(String pathOrName, String version, String group) {
+        var id = getDependencyIdByPathOrName(pathOrName);
         id.setVersion(version);
         id.setGroup(group);
         return id;
     }
 
-    public GradleDependencyId getGradleDependencyIdByMethodName(String methodName) {
+    public GradleDependencyId getDependencyIdByMethodName(String methodName) {
         var name = LOWER_CAMEL.to(LOWER_HYPHEN, methodName);
-        return getGradleDependencyIdByPathOrName(name);
+        return getDependencyIdByPathOrName(name);
     }
 
     public void internGradleDependencyIds() {

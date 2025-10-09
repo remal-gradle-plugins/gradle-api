@@ -203,9 +203,14 @@ public abstract class Utils {
     }
 
 
-    public static String substringBeforeLast(String name, char delim) {
-        var lastDelimPos = name.lastIndexOf(delim);
-        return lastDelimPos > 0 ? name.substring(0, lastDelimPos) : name;
+    public static String substringBefore(String string, String needle) {
+        var lastDelimPos = string.indexOf(needle);
+        return lastDelimPos > 0 ? string.substring(0, lastDelimPos) : string;
+    }
+
+    public static String substringBeforeLast(String string, String needle) {
+        var lastDelimPos = string.lastIndexOf(needle);
+        return lastDelimPos > 0 ? string.substring(0, lastDelimPos) : string;
     }
 
 }

@@ -20,15 +20,19 @@ public class GradleDependencyInfo {
     @JsonInclude(NON_DEFAULT)
     private boolean root;
 
-    @Nullable
     @JsonProperty(index = 2)
-    private String path;
+    @JsonInclude(NON_DEFAULT)
+    private boolean syntheticGroup;
 
     @Nullable
     @JsonProperty(index = 3)
+    private String path;
+
+    @Nullable
+    @JsonProperty(index = 4)
     private GradleDependencyId bom;
 
-    @JsonProperty(index = 4)
+    @JsonProperty(index = 5)
     private SequencedSet<GradleDependencyId> dependencies = new LinkedHashSet<>();
 
 

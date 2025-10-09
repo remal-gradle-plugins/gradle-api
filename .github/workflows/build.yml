@@ -55,13 +55,13 @@ jobs:
       id: test-versions-matrix
       uses: remal-github-actions/matrix-versions@v1
       with:
-        #- stable-majors+current-unstable
         matrix: |
           gradle:
             dependency: gradle-wrapper
             only:
-            - stable-majors
+            - stable-majors+current-unstable
             include:
+            - /^\d(\.\d)*(-rc-?\d*)?$/i
             - '[${{steps.min-gradle-version.outputs.value}},${{steps.max-gradle-version.outputs.value}}.9999)'
     - name: Get all versions to test
       id: test-versions

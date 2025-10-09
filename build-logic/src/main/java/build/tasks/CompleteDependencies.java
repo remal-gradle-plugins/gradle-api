@@ -2,6 +2,7 @@ package build.tasks;
 
 import static build.Constants.GRADLE_API_PUBLISH_GROUP;
 import static build.utils.Utils.compareVersions;
+import static build.utils.Utils.substringBefore;
 import static build.utils.ZipUtils.getZipFileEntryNames;
 import static java.lang.String.join;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -19,6 +20,7 @@ import lombok.SneakyThrows;
 import org.gradle.api.tasks.CacheableTask;
 
 @CacheableTask
+@SuppressWarnings("IfCanBeSwitch")
 public abstract class CompleteDependencies extends AbstractMappingDependenciesInfoTask {
 
     private static final Map<String, String> DEP_NAME_TO_GROUP = ImmutableMap.<String, String>builder()
@@ -59,31 +61,33 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
         var depIdsWithoutGroup = gradleDependencies.getDependencies()
             .keySet()
             .stream()
-            .filter(depId -> depId.getGroup().isEmpty())
+            .filter(id -> id.getGroup().isEmpty())
             .map(String::valueOf)
             .toList();
         if (!depIdsWithoutGroup.isEmpty()) {
             throw new IllegalStateException("Can't determine groups for:\n  " + join("\n  ", depIdsWithoutGroup));
         }
 
-        fixPublishingVersions(gradleDependencies);
-
         fixSnapshotDependencies(gradleDependencies);
+
+        fixPublishingVersions(gradleDependencies);
 
         return gradleDependencies;
     }
 
     @SneakyThrows
     private void updateFromPomProperties(GradleDependencyId depId, GradleDependencyInfo depInfo) {
-        var depFile = Optional.ofNullable(depInfo.getPath()).map(this::getProjectRelativeFile).orElse(null);
+        var depFile = Optional.ofNullable(depInfo.getPath())
+            .map(this::getProjectRelativeFile)
+            .orElse(null);
         if (depFile == null) {
             return;
         }
 
         var pomPropertiesEntryName = getZipFileEntryNames(depFile).stream()
-            .filter(name -> name.startsWith("META-INF/maven/") && name.endsWith("/"
-                + depId.getName()
-                + "/pom.properties"))
+            .filter(name -> name.startsWith("META-INF/maven/")
+                && name.endsWith("/" + depId.getName() + "/pom.properties")
+            )
             .findFirst()
             .orElse(null);
         if (pomPropertiesEntryName != null) {
@@ -106,10 +110,9 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
         var depNamePrefix = depId.getName() + "-";
 
         if (depNamePrefix.startsWith("jspecify-")) {
-            var version = depId.getVersion();
-            if (version.endsWith("-no-module-annotation")) {
-                depId.setVersion(version.substring(0, version.length() - "-no-module-annotation".length()));
-            }
+            depId.setVersion(
+                substringBefore(depId.getVersion(), "-no-module-annotation")
+            );
             return;
         }
     }
@@ -131,9 +134,11 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
             }
         }
 
+
         if (depNamePrefix.startsWith("groovy-")) {
             if (PREBUILT_GROOVY_VERSION.matcher(depId.getVersion()).matches()) {
                 depId.setGroup(GRADLE_API_PUBLISH_GROUP); // some prebuilt groovy from Gradle
+                depInfo.setSyntheticGroup(true);
             } else if (compareVersions(depId.getVersion(), "4") >= 0) {
                 depId.setGroup("org.apache.groovy");
             } else {
@@ -145,13 +150,16 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
 
         if (depNamePrefix.startsWith("gradle-")
             || depNamePrefix.startsWith("local-groovy-")
-            || depNamePrefix.startsWith("native-platform-")) {
+            || depNamePrefix.startsWith("native-platform-")
+        ) {
             depId.setGroup(GRADLE_API_PUBLISH_GROUP);
             return;
         }
 
 
-        var depFile = Optional.ofNullable(depInfo.getPath()).map(this::getProjectRelativeFile).orElse(null);
+        var depFile = Optional.ofNullable(depInfo.getPath())
+            .map(this::getProjectRelativeFile)
+            .orElse(null);
 
         if (depNamePrefix.startsWith("annotations-") && depFile != null) {
             var hasJetbrainsNonNull = getZipFileEntryNames(depFile).stream()
@@ -163,9 +171,9 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
         }
 
         if (depNamePrefix.startsWith("core-") && depFile != null) {
-            var hasJetbrainsNonNull = getZipFileEntryNames(depFile).stream()
+            var hasJdkCoreClasses = getZipFileEntryNames(depFile).stream()
                 .anyMatch(it -> it.startsWith("org/eclipse/jdt/core/") && it.endsWith(".class"));
-            if (hasJetbrainsNonNull) {
+            if (hasJdkCoreClasses) {
                 depId.setGroup("org.eclipse.jdt");
             }
             return;
@@ -177,17 +185,16 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
             return;
         }
 
-        var depNamePrefix = depId.getName() + "-";
-
-
-        if (depNamePrefix.startsWith("groovy-")) {
+        if (depId.getGroup().equals("org.apache.groovy")
+            || depId.getGroup().equals("org.codehaus.groovy")
+        ) {
             if (compareVersions(depId.getVersion(), "2.4.19") >= 0) {
                 depInfo.setBom(depId.withName("groovy-bom"));
             }
             return;
         }
 
-        if (depNamePrefix.startsWith("kotlin-")) {
+        if (depId.getGroup().equals("org.jetbrains.kotlin")) {
             if (compareVersions(depId.getVersion(), "1.3.20") >= 0) {
                 depInfo.setBom(depId.withName("kotlin-bom"));
             }
@@ -201,7 +208,7 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
             return;
         }
 
-        if (depNamePrefix.startsWith("asm-")) {
+        if (depId.getGroup().equals("org.ow2.asm")) {
             if (compareVersions(depId.getVersion(), "9.3") >= 0) {
                 depInfo.setBom(depId.withName("asm-bom"));
             }
@@ -210,19 +217,15 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
     }
 
 
-    private void fixPublishingVersions(GradleDependencies gradleDependencies) {
-        gradleDependencies.getDependencies().keySet().stream()
-            .filter(id -> id.getGroup().equals(GRADLE_API_PUBLISH_GROUP))
-            .forEach(id -> id.setVersion(gradleDependencies.getGradleVersion()));
-    }
-
-
     private void fixSnapshotDependencies(GradleDependencies gradleDependencies) {
         var deps = gradleDependencies.getDependencies();
-        var snapshotIds = deps.keySet().stream().filter(id -> id.getVersion().endsWith("-SNAPSHOT")).toList();
+        var snapshotIds = deps.keySet().stream()
+            .filter(id -> id.getVersion().endsWith("-SNAPSHOT"))
+            .toList();
         for (var snapshotId : snapshotIds) {
-            var newId = gradleDependencies.getGradleDependencyIdByPathOrName("gradle-snapshot-dependency-"
-                + snapshotId.getName());
+            var newId = gradleDependencies.getDependencyIdByPathOrName(
+                "gradle-snapshot-dependency-" + snapshotId.getName()
+            );
             newId.setVersion(gradleDependencies.getGradleVersion());
             newId.setGroup(GRADLE_API_PUBLISH_GROUP);
 
@@ -233,8 +236,20 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
             });
 
             var info = deps.remove(snapshotId);
+            info.setSyntheticGroup(true);
             deps.put(newId, info);
         }
+    }
+
+
+    private void fixPublishingVersions(GradleDependencies gradleDependencies) {
+        gradleDependencies.getDependencies().forEach((depId, depInfo) -> {
+            if (depId.getGroup().equals(GRADLE_API_PUBLISH_GROUP)
+                && !depInfo.isSyntheticGroup()
+            ) {
+                depId.setVersion(gradleDependencies.getGradleVersion());
+            }
+        });
     }
 
 }

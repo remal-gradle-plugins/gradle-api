@@ -1,8 +1,8 @@
 package build.tasks;
 
 import static build.Constants.GRADLE_API_PUBLISH_GROUP;
+import static java.lang.Math.min;
 import static java.lang.Math.pow;
-import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.Files.walk;
@@ -12,6 +12,7 @@ import static org.gradle.api.tasks.PathSensitivity.RELATIVE;
 import build.utils.WithLocalBuildRepository;
 import build.utils.WithPublishRepository;
 import com.google.common.net.MediaType;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -22,6 +23,7 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.regex.Pattern;
 import lombok.SneakyThrows;
+import org.gradle.api.BuildCancelledException;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.tasks.InputDirectory;
 import org.gradle.api.tasks.PathSensitive;
@@ -34,8 +36,8 @@ import org.gradle.work.DisableCachingByDefault;
 public abstract class PublishArtifacts extends AbstractBuildLogicTask
     implements WithLocalBuildRepository, WithPublishRepository {
 
-    private static final int MAX_UPLOAD_ATTEMPTS = 5;
-    private static final Duration SLEEP_BETWEEN_UPLOAD_ATTEMPTS = Duration.ofSeconds(1);
+    private static final int MAX_HTTP_REQUEST_ATTEMPTS = 5;
+    private static final Duration BASE_SLEEP_BETWEEN_HTTP_REQUEST_ATTEMPTS = Duration.ofSeconds(1);
 
     private static final Pattern TEXT_CONTENT_TYPE = Pattern.compile("\\b(text|xml|json|yaml)\\b", CASE_INSENSITIVE);
 
@@ -65,6 +67,10 @@ public abstract class PublishArtifacts extends AbstractBuildLogicTask
         var basePath = getLocalBuildRepository().get().getAsFile().toPath();
         try (var walk = walk(basePath)) {
             walk.filter(Files::isRegularFile).forEach(file -> {
+                if (getBuildCancellationToken().isCancellationRequested()) {
+                    throw new BuildCancelledException();
+                }
+
                 var relativePath = basePath.relativize(file).toString().replace('\\', '/');
                 var expectedRelativePathPrefix = GRADLE_API_PUBLISH_GROUP.replace('.', '/') + '/';
                 if (!relativePath.startsWith(expectedRelativePathPrefix)) {
@@ -77,7 +83,6 @@ public abstract class PublishArtifacts extends AbstractBuildLogicTask
     }
 
     @SneakyThrows
-    @SuppressWarnings("BusyWait")
     private void put(String relativePath, Path file) {
         while (relativePath.startsWith("/")) {
             relativePath = relativePath.substring(1);
@@ -97,66 +102,121 @@ public abstract class PublishArtifacts extends AbstractBuildLogicTask
             getRepository().getPassword().get()
         ).getBytes(UTF_8));
 
-        var request = HttpRequest.newBuilder(uri)
-            .header("Authorization", "Basic " + auth)
-            .header("Content-Type", "application/octet-stream")
-            .PUT(HttpRequest.BodyPublishers.ofFile(file))
-            .build();
-
         try (var httpClient = HttpClient.newHttpClient()) {
-            for (var attempt = 1; ; attempt++) {
-                var response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            var headRequest = HttpRequest.newBuilder(uri)
+                .header("Authorization", "Basic " + auth)
+                .HEAD()
+                .build();
+            var headResponse = sendHttpRequestWithRetry(httpClient, headRequest);
+            if (headResponse.statusCode() < 400) {
+                getLogger().lifecycle("  already uploaded");
+                return;
+            }
 
-                var statusCode = response.statusCode();
-                if (statusCode < 400) {
-                    break;
-                }
+            var putRequest = HttpRequest.newBuilder(uri)
+                .header("Authorization", "Basic " + auth)
+                .header("Content-Type", "application/octet-stream")
+                .PUT(HttpRequest.BodyPublishers.ofFile(file))
+                .build();
+            sendHttpRequestWithRetry(httpClient, putRequest);
+        }
+    }
 
-                var isRetryableStatusCode = statusCode >= 500
-                    || statusCode == 408
-                    || statusCode == 409
-                    || statusCode == 425
-                    || statusCode == 423
-                    || statusCode == 429;
-                if (attempt < MAX_UPLOAD_ATTEMPTS && isRetryableStatusCode) {
-                    var sleepMillis = toIntExact((long) (
-                        SLEEP_BETWEEN_UPLOAD_ATTEMPTS.toMillis() * pow(2, attempt - 1)
-                    ));
+    @SneakyThrows
+    private HttpResponse<byte[]> sendHttpRequestWithRetry(HttpClient httpClient, HttpRequest request) {
+        for (var attempt = 1; ; attempt++) {
+            if (getBuildCancellationToken().isCancellationRequested()) {
+                throw new BuildCancelledException();
+            }
+
+            final HttpResponse<byte[]> response;
+            try {
+                response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+
+            } catch (IOException exception) {
+                if (attempt < MAX_HTTP_REQUEST_ATTEMPTS) {
+                    var sleepMillis = getSleepBetweenHttpRequests(attempt);
                     getLogger().warn(
-                        "Could not {} `{}`. Received status code {} from server. Will retry in {}ms.",
+                        "Could not {} `{}`. An exception was throw: {}. Will retry in {}ms.",
                         request.method(),
                         request.uri(),
-                        statusCode,
+                        exception,
                         sleepMillis
                     );
-                    Thread.sleep(sleepMillis);
+                    sleep(sleepMillis);
                     continue;
                 }
 
-                var responseBytes = response.body();
+                throw exception;
+            }
 
-                var responseBodyString = "";
-                var mediaType = response.headers().firstValue("Content-Type")
-                    .map(MediaType::parse)
-                    .orElse(null);
-                if (mediaType != null) {
-                    var isText = TEXT_CONTENT_TYPE.matcher(mediaType.withoutParameters().toString()).find();
-                    if (isText) {
-                        var charset = mediaType.charset().or(UTF_8);
-                        responseBodyString = new String(responseBytes, charset);
-                    } else if (responseBytes.length > 0) {
-                        responseBodyString = format("<non-textual content of %d bytes>", responseBytes.length);
-                    }
-                }
 
-                throw new IllegalStateException(format(
-                    "Could not %s `%s`. Received status code %d from server: %s",
+            var statusCode = response.statusCode();
+            if (statusCode < 400) {
+                return response;
+            }
+
+            var isRetryableStatusCode = statusCode >= 500
+                || statusCode == 408
+                || statusCode == 409
+                || statusCode == 425
+                || statusCode == 423
+                || statusCode == 429;
+            if (attempt < MAX_HTTP_REQUEST_ATTEMPTS && isRetryableStatusCode) {
+                var sleepMillis = getSleepBetweenHttpRequests(attempt);
+                getLogger().warn(
+                    "Could not {} `{}`. Received status code {} from server. Will retry in {}ms.",
                     request.method(),
                     request.uri(),
                     statusCode,
-                    responseBodyString
-                ));
+                    sleepMillis
+                );
+                sleep(sleepMillis);
+                continue;
             }
+
+            var responseBytes = response.body();
+
+            var responseBodyString = "";
+            var mediaType = response.headers().firstValue("Content-Type")
+                .map(MediaType::parse)
+                .orElse(null);
+            if (mediaType != null) {
+                var isText = TEXT_CONTENT_TYPE.matcher(mediaType.withoutParameters().toString()).find();
+                if (isText) {
+                    var charset = mediaType.charset().or(UTF_8);
+                    responseBodyString = new String(responseBytes, charset);
+                } else if (responseBytes.length > 0) {
+                    responseBodyString = format("<non-textual content of %d bytes>", responseBytes.length);
+                }
+            }
+
+            throw new IllegalStateException(format(
+                "Could not %s `%s`. Received status code %d from server: %s",
+                request.method(),
+                request.uri(),
+                statusCode,
+                responseBodyString
+            ));
+        }
+    }
+
+    private long getSleepBetweenHttpRequests(int attempt) {
+        var baseSleepMillis = BASE_SLEEP_BETWEEN_HTTP_REQUEST_ATTEMPTS.toMillis();
+        return (long) (baseSleepMillis * pow(2, attempt - 1));
+    }
+
+    @SneakyThrows
+    private void sleep(long sleepMillis) {
+        while (sleepMillis > 0) {
+            if (getBuildCancellationToken().isCancellationRequested()) {
+                throw new BuildCancelledException();
+            }
+
+            var currentSleepMillis = min(sleepMillis, 1000);
+            Thread.sleep(currentSleepMillis);
+
+            sleepMillis -= currentSleepMillis;
         }
     }
 

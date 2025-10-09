@@ -64,7 +64,7 @@ public abstract class AsmUtils {
                 @Nullable String superName,
                 @Nullable String[] interfaces
             ) {
-                dirRef.set(substringBeforeLast(name, '/'));
+                dirRef.set(substringBeforeLast(name, "/"));
             }
 
             @Override

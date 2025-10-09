@@ -164,7 +164,7 @@ public abstract class PublishArtifactsToLocalBuildRepository
     }
 
     private File publishGradleApiBom(GradleDependencies gradleDependencies, GradlePublishedDependencies publishedDeps) {
-        var bomId = gradleDependencies.getGradleDependencyIdByPathOrName(
+        var bomId = gradleDependencies.getDependencyIdByPathOrName(
             GRADLE_API_BOM_NAME,
             gradleDependencies.getGradleVersion(),
             GRADLE_API_PUBLISH_GROUP
@@ -230,7 +230,7 @@ public abstract class PublishArtifactsToLocalBuildRepository
 
             var addedBoms = new LinkedHashSet<GradleDependencyId>();
 
-            var gradleApiBomId = gradleDependencies.getGradleDependencyIdByPathOrName(
+            var gradleApiBomId = gradleDependencies.getDependencyIdByPathOrName(
                 GRADLE_API_BOM_NAME,
                 gradleDependencies.getGradleVersion(),
                 GRADLE_API_PUBLISH_GROUP
@@ -330,8 +330,8 @@ public abstract class PublishArtifactsToLocalBuildRepository
             .map(name -> {
                 var prefix = getEntryPrefix(name);
                 name = name.substring(prefix.length());
-                name = Utils.substringBeforeLast(name, '.');
-                name = Utils.substringBeforeLast(name, '$');
+                name = Utils.substringBeforeLast(name, ".");
+                name = Utils.substringBeforeLast(name, "$");
                 return prefix + name;
             })
             .distinct()
