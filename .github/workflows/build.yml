@@ -105,9 +105,7 @@ jobs:
         allowEmptyResult: true
         matrix: |
           gradle:
-            dependency: 'maven:name.remal.gradle-api:gradle-api'
-            repositories:
-            - 'https://maven.pkg.github.com/remal-gradle-api/packages'
+            dependency: gradle-wrapper
             only:
             - stable
             include:
@@ -121,9 +119,7 @@ jobs:
         allowEmptyResult: true
         matrix: |
           gradle:
-            dependency: 'maven:name.remal.gradle-api:gradle-api'
-            repositories:
-            - 'https://maven.pkg.github.com/remal-gradle-api/packages'
+            dependency: gradle-wrapper
             only:
             - unstable
             include:
