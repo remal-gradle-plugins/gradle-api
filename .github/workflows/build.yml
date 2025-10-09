@@ -106,6 +106,7 @@ jobs:
             only:
             - stable+current-unstable
             include:
+            - /^\d(\.\d)*(-rc-?\d*)?$/i
             - '[${{steps.min-gradle-version.outputs.value}},${{steps.max-gradle-version.outputs.value}}.9999)'
             exclude: ${{steps.published-versions-array.outputs.json-array}}
 
