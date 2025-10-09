@@ -11,7 +11,13 @@ tasks.withType<PublishArtifactsToLocalBuildRepository>().configureEach { onlyIf 
 
 
 buildLogic {
-    sequenceOf(findProperty("gradle.version")?.toString()).filterNotNull().filterNot(String::isBlank).firstOrNull()?.run { gradleVersion = this }
+    sequenceOf("gradle.version")
+        .map(project::findProperty)
+        .filterNotNull()
+        .map(Any::toString)
+        .filterNot(String::isBlank)
+        .firstOrNull()
+        ?.run { gradleVersion = this }
 
     license license@{
         this@license.name = "MIT License"
@@ -20,8 +26,20 @@ buildLogic {
 
     repository {
         url = "https://maven.pkg.github.com/remal-gradle-api/packages"
-        sequenceOf(findProperty("github.publish-user")?.toString(), System.getenv("PUBLISH_USER")).filterNotNull().filterNot(String::isBlank).firstOrNull()?.run { username = this }
-        sequenceOf(findProperty("github.publish-password")?.toString(), System.getenv("PUBLISH_PASSWORD")).filterNotNull().filterNot(String::isBlank).firstOrNull()?.run { password = this }
+        sequenceOf("github.publish-username", "publish-username")
+            .map(project::findProperty)
+            .filterNotNull()
+            .map(Any::toString)
+            .filterNot(String::isBlank)
+            .firstOrNull()
+            ?.run { username = this }
+        sequenceOf("github.publish-password", "publish-password")
+            .map(project::findProperty)
+            .filterNotNull()
+            .map(Any::toString)
+            .filterNot(String::isBlank)
+            .firstOrNull()
+            ?.run { password = this }
     }
 }
 

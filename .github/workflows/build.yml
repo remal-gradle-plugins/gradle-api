@@ -139,7 +139,7 @@ jobs:
     - name: Publish
       if: ${{needs.prepare.outputs.publish-matrix-includes != '[]'}}
       run: |
-        ./gradlew-retry-connection-timeouts publishArtifacts "-Pgradle.version=${{matrix.gradle}}"
+        ./gradlew-retry-connection-timeouts publishArtifacts "-Pgradle.version=${{matrix.gradle}}" "-Ppublish-username=${{github.actor}}" "-Ppublish-password=${{secrets.WRITE_PACKAGES_TOKEN}}"
 
 
   build-success:
