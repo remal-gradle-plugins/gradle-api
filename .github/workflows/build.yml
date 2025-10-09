@@ -64,7 +64,7 @@ jobs:
             only:
             - stable-majors+current-unstable
             include:
-            - /^\d(\.\d)*(-rc-?\d*)?$/i
+            - /^\d+(\.\d+)*(-rc-?\d*)?$/i
             - '[${{steps.min-gradle-version.outputs.value}},${{steps.max-gradle-version.outputs.value}}.9999)'
     - name: Get all versions to test
       id: test-versions
@@ -121,7 +121,7 @@ jobs:
             only:
             - unstable
             include:
-            - '[${{steps.min-gradle-version.outputs.value}},${{fromJSON(steps.stable-versions-matrix.outputs.allMatrixIncludes)[0].gradle}}]'
+            - '[${{steps.min-gradle-version.outputs.value}},${{fromJSON(steps.stable-versions-matrix.outputs.allMatrixIncludes)[0].gradle}})'
     - name: Convert old unstable versions matrix to a JSON array
       if: ${{github.ref == 'refs/heads/main'}}
       id: old-unstable-versions-array
@@ -151,7 +151,7 @@ jobs:
             only:
             - stable+current-unstable
             include:
-            - /^\d(\.\d)*(-rc-?\d*)?$/i
+            - /^\d+(\.\d+)*(-rc-?\d*)?$/i
             - '[${{steps.min-gradle-version.outputs.value}},${{steps.max-gradle-version.outputs.value}}.9999)'
             exclude: ${{steps.publish-versions-exclusions.outputs.json-array}}
 
