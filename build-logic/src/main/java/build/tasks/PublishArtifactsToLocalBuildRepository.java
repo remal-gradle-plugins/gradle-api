@@ -8,6 +8,7 @@ import static build.utils.Utils.createCleanDirectory;
 import static build.utils.Utils.substringBeforeLast;
 import static build.utils.ZipUtils.getZipFileEntryNames;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
+import static java.lang.Boolean.TRUE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.Files.createDirectories;
 import static java.nio.file.Files.deleteIfExists;
@@ -45,7 +46,9 @@ import org.gradle.api.Action;
 import org.gradle.api.BuildCancelledException;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.CacheableTask;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.OutputFile;
@@ -54,13 +57,19 @@ import org.gradle.api.tasks.TaskAction;
 import org.jspecify.annotations.Nullable;
 
 @CacheableTask
-public abstract class PublishArtifactsToLocalBuildRepository
-    extends AbstractGradleFilesConsumerTask
+public abstract class PublishArtifactsToLocalBuildRepository extends AbstractGradleFilesConsumerTask
     implements WithPublishLicense, WithLocalBuildRepository {
 
     @InputFile
     @PathSensitive(RELATIVE)
     public abstract RegularFileProperty getGradleDependenciesFile();
+
+    @Input
+    public abstract Property<Boolean> getPublishHashes();
+
+    {
+        getPublishHashes().convention(false);
+    }
 
 
     @OutputDirectory
@@ -97,10 +106,8 @@ public abstract class PublishArtifactsToLocalBuildRepository
         deleteIfExists(outputFile);
         createDirectories(outputFile.getParent());
 
-        var gradleDependencies = Json.JSON_READER.readValue(
-            getGradleDependenciesFile().get().getAsFile(),
-            GradleDependencies.class
-        );
+        var gradleDependencies = Json.JSON_READER.readValue(getGradleDependenciesFile().get().getAsFile(),
+            GradleDependencies.class);
 
         var publishedDependencies = new GradlePublishedDependencies(gradleDependencies.getGradleVersion());
 
@@ -111,9 +118,10 @@ public abstract class PublishArtifactsToLocalBuildRepository
             .entrySet()
             .stream()
             .filter(entry -> entry.getKey().getGroup().equals(GRADLE_API_PUBLISH_GROUP))
-            .forEach(entry ->
-                publishDependency(gradleDependencies, entry.getKey(), entry.getValue(), publishedDependencies)
-            );
+            .forEach(entry -> publishDependency(gradleDependencies,
+                entry.getKey(),
+                entry.getValue(),
+                publishedDependencies));
 
 
         Json.JSON_WRITER.writeValue(outputFile.toFile(), publishedDependencies);
@@ -132,7 +140,9 @@ public abstract class PublishArtifactsToLocalBuildRepository
 
         configure.execute(pom);
 
-        var outputFile = getLocalBuildRepository().getAsFile().get().toPath()
+        var outputFile = getLocalBuildRepository().getAsFile()
+            .get()
+            .toPath()
             .resolve(pom.getGroupId().replace('.', '/'))
             .resolve(pom.getArtifactId())
             .resolve(pom.getVersion())
@@ -165,11 +175,9 @@ public abstract class PublishArtifactsToLocalBuildRepository
     }
 
     private File publishGradleApiBom(GradleDependencies gradleDependencies, GradlePublishedDependencies publishedDeps) {
-        var bomId = gradleDependencies.getDependencyIdByPathOrName(
-            GRADLE_API_BOM_NAME,
+        var bomId = gradleDependencies.getDependencyIdByPathOrName(GRADLE_API_BOM_NAME,
             gradleDependencies.getGradleVersion(),
-            GRADLE_API_PUBLISH_GROUP
-        );
+            GRADLE_API_PUBLISH_GROUP);
 
         var pomFile = publishPom(pom -> {
             pom.setGroupId(bomId.getGroup());
@@ -186,12 +194,12 @@ public abstract class PublishArtifactsToLocalBuildRepository
             });
         });
 
-        publishedDeps.getDependencies().put(
-            bomId,
-            new GradlePublishedDependencyInfo(
-                getLocalBuildRepository().getAsFile().get().toPath().relativize(pomFile.toPath())
-            )
-        );
+        publishedDeps.getDependencies()
+            .put(bomId,
+                new GradlePublishedDependencyInfo(getLocalBuildRepository().getAsFile()
+                    .get()
+                    .toPath()
+                    .relativize(pomFile.toPath())));
 
         return pomFile;
     }
@@ -231,11 +239,9 @@ public abstract class PublishArtifactsToLocalBuildRepository
 
             var addedBoms = new LinkedHashSet<GradleDependencyId>();
 
-            var gradleApiBomId = gradleDependencies.getDependencyIdByPathOrName(
-                GRADLE_API_BOM_NAME,
+            var gradleApiBomId = gradleDependencies.getDependencyIdByPathOrName(GRADLE_API_BOM_NAME,
                 gradleDependencies.getGradleVersion(),
-                GRADLE_API_PUBLISH_GROUP
-            );
+                GRADLE_API_PUBLISH_GROUP);
             if (id.getGroup().equals(GRADLE_API_PUBLISH_GROUP)) {
                 if (addedBoms.add(gradleApiBomId)) {
                     dependencyManagement.add(createDependency(gradleApiBomId, "pom", "import"));
@@ -261,12 +267,12 @@ public abstract class PublishArtifactsToLocalBuildRepository
             });
         });
 
-        publishedDeps.getDependencies().put(
-            id,
-            new GradlePublishedDependencyInfo(
-                getLocalBuildRepository().getAsFile().get().toPath().relativize(pomFile.toPath())
-            )
-        );
+        publishedDeps.getDependencies()
+            .put(id,
+                new GradlePublishedDependencyInfo(getLocalBuildRepository().getAsFile()
+                    .get()
+                    .toPath()
+                    .relativize(pomFile.toPath())));
 
         return pomFile;
     }
@@ -279,14 +285,13 @@ public abstract class PublishArtifactsToLocalBuildRepository
         GradleDependencyInfo info,
         GradlePublishedDependencies publishedDeps
     ) {
-        var file = Optional.ofNullable(info.getPath())
-            .map(this::getProjectRelativeFile)
-            .orElse(null);
+        var file = Optional.ofNullable(info.getPath()).map(this::getProjectRelativeFile).orElse(null);
         if (file == null) {
             return null;
         }
 
-        var entriesToExclude = gradleDependencies.getAllDependencies(id).stream()
+        var entriesToExclude = gradleDependencies.getAllDependencies(id)
+            .stream()
             .map(gradleDependencies.getDependencies()::get)
             .filter(Objects::nonNull)
             .map(GradleDependencyInfo::getPath)
@@ -298,11 +303,11 @@ public abstract class PublishArtifactsToLocalBuildRepository
             .collect(toImmutableSet());
 
         var allEntries = getZipFileEntryNames(file);
-        var entriesToInclude = allEntries.stream()
-            .filter(not(entriesToExclude::contains))
-            .toList();
+        var entriesToInclude = allEntries.stream().filter(not(entriesToExclude::contains)).toList();
 
-        var outputFile = getLocalBuildRepository().getAsFile().get().toPath()
+        var outputFile = getLocalBuildRepository().getAsFile()
+            .get()
+            .toPath()
             .resolve(id.getGroup().replace('.', '/'))
             .resolve(id.getName())
             .resolve(id.getVersion())
@@ -310,9 +315,9 @@ public abstract class PublishArtifactsToLocalBuildRepository
         getLogger().lifecycle("Creating {}", outputFile);
         copyJarEntries(file, outputFile.toFile(), entriesToInclude, getBuildCancellationToken());
 
-        publishedDeps.getDependencies().get(id).setJarFilePath(
-            getLocalBuildRepository().getAsFile().get().toPath().relativize(outputFile)
-        );
+        publishedDeps.getDependencies()
+            .get(id)
+            .setJarFilePath(getLocalBuildRepository().getAsFile().get().toPath().relativize(outputFile));
 
         publishHashesOf(outputFile.toFile());
 
@@ -327,16 +332,13 @@ public abstract class PublishArtifactsToLocalBuildRepository
         GradlePublishedDependencies publishedDeps
     ) {
         var allEntries = getZipFileEntryNames(jarFile);
-        var entryPrefixes = allEntries.stream()
-            .map(name -> {
-                var prefix = getEntryPrefix(name);
-                name = name.substring(prefix.length());
-                name = substringBeforeLast(name, ".");
-                name = substringBeforeLast(name, "$");
-                return prefix + name;
-            })
-            .distinct()
-            .toList();
+        var entryPrefixes = allEntries.stream().map(name -> {
+            var prefix = getEntryPrefix(name);
+            name = name.substring(prefix.length());
+            name = substringBeforeLast(name, ".");
+            name = substringBeforeLast(name, "$");
+            return prefix + name;
+        }).distinct().toList();
 
         var sourcesArchiveFile = getProjectRelativeFile(gradleDependencies.getSourcesArchiveFile());
         var allSourceEntries = getZipFileEntryNames(sourcesArchiveFile);
@@ -346,9 +348,7 @@ public abstract class PublishArtifactsToLocalBuildRepository
             .collect(toCollection(LinkedHashSet::new));
 
         try (var zipFile = new ZipFile(jarFile, UTF_8)) {
-            var classEntries = allEntries.stream()
-                .filter(name -> name.endsWith(".class"))
-                .toList();
+            var classEntries = allEntries.stream().filter(name -> name.endsWith(".class")).toList();
             for (var entryName : classEntries) {
                 var entry = requireNonNull(zipFile.getEntry(entryName));
                 try (var in = zipFile.getInputStream(entry)) {
@@ -361,7 +361,9 @@ public abstract class PublishArtifactsToLocalBuildRepository
 
         }
 
-        var outputFile = getLocalBuildRepository().getAsFile().get().toPath()
+        var outputFile = getLocalBuildRepository().getAsFile()
+            .get()
+            .toPath()
             .resolve(id.getGroup().replace('.', '/'))
             .resolve(id.getName())
             .resolve(id.getVersion())
@@ -369,9 +371,9 @@ public abstract class PublishArtifactsToLocalBuildRepository
         getLogger().lifecycle("Creating {}", outputFile);
         copyJarEntries(sourcesArchiveFile, outputFile.toFile(), entriesToInclude, getBuildCancellationToken());
 
-        publishedDeps.getDependencies().get(id).setSourcesJarFilePath(
-            getLocalBuildRepository().getAsFile().get().toPath().relativize(outputFile)
-        );
+        publishedDeps.getDependencies()
+            .get(id)
+            .setSourcesJarFilePath(getLocalBuildRepository().getAsFile().get().toPath().relativize(outputFile));
 
         publishHashesOf(outputFile.toFile());
 
@@ -397,7 +399,11 @@ public abstract class PublishArtifactsToLocalBuildRepository
 
 
     @SuppressWarnings("deprecation")
-    private static void publishHashesOf(File file) {
+    private void publishHashesOf(File file) {
+        if (!TRUE.equals(getPublishHashes().getOrNull())) {
+            return;
+        }
+
         publishHashOf(file, Hashing.md5(), ".md5");
         publishHashOf(file, Hashing.sha1(), ".sha1");
         publishHashOf(file, Hashing.sha256(), ".sha256");
