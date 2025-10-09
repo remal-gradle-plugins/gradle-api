@@ -162,6 +162,10 @@ public abstract class PublishArtifacts extends AbstractBuildLogicTask
                 return response;
             }
 
+            if (request.method().equals("HEAD") && statusCode == 404) {
+                return response;
+            }
+
             var isRetryableStatusCode = statusCode >= 500
                 || statusCode == 408
                 || statusCode == 409

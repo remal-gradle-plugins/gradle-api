@@ -199,6 +199,9 @@ public abstract class BuildLogicPlugin implements Plugin<Project> {
             "publishArtifacts",
             PublishArtifacts.class,
             task -> {
+                task.dependsOn(getTasks().withType(VerifyPublishedArtifactsToLocalBuildRepository.class));
+                task.dependsOn(getTasks().withType(AbstractTestTask.class));
+
                 task.getLocalBuildRepository().convention(
                     publishArtifactsToLocalBuildRepository
                         .flatMap(PublishArtifactsToLocalBuildRepository::getLocalBuildRepository)
