@@ -14,7 +14,7 @@ permissions:
 
 concurrency:
   group: build-${{github.ref}}
-  cancel-in-progress: false
+  cancel-in-progress: ${{github.ref != 'refs/heads/main'}}
 
 defaults:
   run:
@@ -119,7 +119,7 @@ jobs:
       matrix:
         include: ${{fromJSON(needs.prepare.outputs.publish-matrix-includes != '[]' && needs.prepare.outputs.publish-matrix-includes || needs.prepare.outputs.build-matrix-includes)}}
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 60
     steps:
     - name: Setup Java
       uses: actions/setup-java@v5
