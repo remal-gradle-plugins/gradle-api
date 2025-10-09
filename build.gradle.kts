@@ -20,8 +20,8 @@ buildLogic {
 
     repository {
         url = "https://maven.pkg.github.com/remal-gradle-api/packages"
-        //sequenceOf(findProperty("github.publish-user")?.toString(), System.getenv("PUBLISH_USER")).filterNotNull().filterNot(String::isBlank).firstOrNull()?.run { username = this }
-        //sequenceOf(findProperty("github.publish-password")?.toString(), System.getenv("PUBLISH_PASSWORD")).filterNotNull().filterNot(String::isBlank).firstOrNull()?.run { password = this }
+        sequenceOf(findProperty("github.publish-user")?.toString(), System.getenv("PUBLISH_USER")).filterNotNull().filterNot(String::isBlank).firstOrNull()?.run { username = this }
+        sequenceOf(findProperty("github.publish-password")?.toString(), System.getenv("PUBLISH_PASSWORD")).filterNotNull().filterNot(String::isBlank).firstOrNull()?.run { password = this }
     }
 }
 
