@@ -6,11 +6,13 @@ import static build.utils.Utils.substringBefore;
 import static build.utils.ZipUtils.getZipFileEntryNames;
 import static java.lang.String.join;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.stream.Collectors.toCollection;
 
 import build.dto.GradleDependencies;
 import build.dto.GradleDependencyId;
 import build.dto.GradleDependencyInfo;
 import com.google.common.collect.ImmutableMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -18,6 +20,7 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
 import lombok.SneakyThrows;
 import org.gradle.api.tasks.CacheableTask;
+import org.jspecify.annotations.Nullable;
 
 @CacheableTask
 @SuppressWarnings("IfCanBeSwitch")
@@ -77,32 +80,14 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
 
     @SneakyThrows
     private void updateFromPomProperties(GradleDependencyId depId, GradleDependencyInfo depInfo) {
-        var depFile = Optional.ofNullable(depInfo.getPath())
-            .map(this::getProjectRelativeFile)
-            .orElse(null);
-        if (depFile == null) {
+        var pomProperties = getPomProperties(depId, depInfo);
+        if (pomProperties == null) {
             return;
         }
 
-        var pomPropertiesEntryName = getZipFileEntryNames(depFile).stream()
-            .filter(name -> name.startsWith("META-INF/maven/")
-                && name.endsWith("/" + depId.getName() + "/pom.properties")
-            )
-            .findFirst()
-            .orElse(null);
-        if (pomPropertiesEntryName != null) {
-            var properties = new Properties();
-            try (
-                var zipFile = new ZipFile(depFile, UTF_8);
-                var in = zipFile.getInputStream(zipFile.getEntry(pomPropertiesEntryName))
-            ) {
-                properties.load(in);
-            }
-
-            var group = properties.getProperty("groupId");
-            if (group != null) {
-                depId.setGroup(group);
-            }
+        var group = pomProperties.getProperty("groupId");
+        if (group != null) {
+            depId.setGroup(group);
         }
     }
 
@@ -221,24 +206,32 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
         var deps = gradleDependencies.getDependencies();
         var snapshotIds = deps.keySet().stream()
             .filter(id -> id.getVersion().endsWith("-SNAPSHOT"))
-            .toList();
-        for (var snapshotId : snapshotIds) {
-            var newId = gradleDependencies.getDependencyIdByPathOrName(
-                "gradle-snapshot-dependency-" + snapshotId.getName()
+            .collect(toCollection(LinkedHashSet::new));
+
+        deps.forEach((depId, depInfo) -> {
+            if (snapshotIds.contains(depId)) {
+                return;
+            }
+
+            var pomProperties = getPomProperties(depId, depInfo);
+            if (pomProperties == null) {
+                return;
+            }
+
+            var version = pomProperties.getProperty("version");
+            if (version != null && version.endsWith("-SNAPSHOT")) {
+                snapshotIds.add(depId);
+            }
+        });
+
+        snapshotIds.forEach(snapshotId -> {
+            snapshotId.setVersion(
+                substringBefore(snapshotId.getVersion(), "-SNAPSHOT")
             );
-            newId.setVersion(gradleDependencies.getGradleVersion());
-            newId.setGroup(GRADLE_API_PUBLISH_GROUP);
 
-            deps.values().forEach(info -> {
-                if (info.getDependencies().remove(snapshotId)) {
-                    info.getDependencies().add(newId);
-                }
-            });
-
-            var info = deps.remove(snapshotId);
-            info.setSyntheticGroup(true);
-            deps.put(newId, info);
-        }
+            snapshotId.setGroup(GRADLE_API_PUBLISH_GROUP);
+            deps.get(snapshotId).setSyntheticGroup(true);
+        });
     }
 
 
@@ -250,6 +243,38 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
                 depId.setVersion(gradleDependencies.getGradleVersion());
             }
         });
+    }
+
+
+    @Nullable
+    @SneakyThrows
+    private Properties getPomProperties(GradleDependencyId depId, GradleDependencyInfo depInfo) {
+        var depFile = Optional.ofNullable(depInfo.getPath())
+            .map(this::getProjectRelativeFile)
+            .orElse(null);
+        if (depFile == null) {
+            return null;
+        }
+
+        var pomPropertiesEntryName = getZipFileEntryNames(depFile).stream()
+            .filter(name -> name.startsWith("META-INF/maven/")
+                && name.endsWith("/" + depId.getName() + "/pom.properties")
+            )
+            .findFirst()
+            .orElse(null);
+        if (pomPropertiesEntryName != null) {
+            var properties = new Properties();
+            try (
+                var zipFile = new ZipFile(depFile, UTF_8);
+                var in = zipFile.getInputStream(zipFile.getEntry(pomPropertiesEntryName))
+            ) {
+                properties.load(in);
+            }
+
+            return properties;
+        }
+
+        return null;
     }
 
 }
