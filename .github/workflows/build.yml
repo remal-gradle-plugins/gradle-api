@@ -71,7 +71,7 @@ jobs:
         MATRIX=$(jq -c '. += [{"gradle": "${{steps.min-gradle-version.outputs.value}}"}]' <<<"$MATRIX")
         echo "matrix=$MATRIX" | tee -a $GITHUB_OUTPUT
 
-    - name: Get published versions
+    - name: Get published versions matrix
       if: ${{github.ref == 'refs/heads/main'}}
       id: published-versions-matrix
       uses: remal-github-actions/matrix-versions@v1
@@ -83,7 +83,7 @@ jobs:
             dependency: 'maven:name.remal.gradle-api:gradle-api'
             repositories:
             - 'https://maven.pkg.github.com/remal-gradle-api/packages'
-    - name: Get published versions JSON array
+    - name: Convert published versions matrix to a JSON array
       if: ${{github.ref == 'refs/heads/main'}}
       id: published-versions-array
       env:
