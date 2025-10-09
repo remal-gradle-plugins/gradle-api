@@ -24,11 +24,13 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 import lombok.SneakyThrows;
+import org.gradle.api.BuildCancelledException;
 import org.gradle.api.file.FileSystemLocation;
 import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.strategy.DefaultVersionComparator;
 import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.strategy.Version;
 import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.strategy.VersionParser;
 import org.gradle.api.provider.Provider;
+import org.gradle.initialization.BuildCancellationToken;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
 import org.gradle.util.GradleVersion;
 import org.intellij.lang.annotations.Language;
@@ -163,12 +165,29 @@ public abstract class Utils {
     }
 
 
-    public static void copyJarEntries(File inFile, File outFile, Collection<String> entryNames) {
-        copyZipEntries(inFile, outFile, entryNames, false);
+    public static void copyJarEntries(
+        File inFile,
+        File outFile,
+        Collection<String> entryNames,
+        @Nullable BuildCancellationToken cancellationToken
+    ) {
+        copyZipEntries(
+            inFile,
+            outFile,
+            entryNames,
+            false,
+            cancellationToken
+        );
     }
 
     @SneakyThrows
-    private static void copyZipEntries(File inFile, File outFile, Collection<String> entryNames, boolean addManifest) {
+    private static void copyZipEntries(
+        File inFile,
+        File outFile,
+        Collection<String> entryNames,
+        boolean addManifest,
+        @Nullable BuildCancellationToken cancellationToken
+    ) {
         createDirectories(outFile.toPath().getParent());
 
         try (
@@ -178,6 +197,10 @@ public abstract class Utils {
             out.setMethod(DEFLATED);
             out.setLevel(9);
             for (var name : entryNames) {
+                if (cancellationToken != null && cancellationToken.isCancellationRequested()) {
+                    throw new BuildCancelledException();
+                }
+
                 var inputEntry = inputZipFile.getEntry(name);
                 if (inputEntry == null) {
                     continue;
@@ -185,8 +208,10 @@ public abstract class Utils {
 
                 var outputEntry = new ZipEntry(inputEntry);
                 out.putNextEntry(outputEntry);
-                try (var in = inputZipFile.getInputStream(inputEntry)) {
-                    in.transferTo(out);
+                if (!inputEntry.isDirectory()) {
+                    try (var in = inputZipFile.getInputStream(inputEntry)) {
+                        in.transferTo(out);
+                    }
                 }
                 out.closeEntry();
             }

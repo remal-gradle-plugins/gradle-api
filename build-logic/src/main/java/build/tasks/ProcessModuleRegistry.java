@@ -17,6 +17,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import org.gradle.api.BuildCancelledException;
 import org.gradle.api.tasks.CacheableTask;
 import org.jspecify.annotations.Nullable;
 import org.objectweb.asm.AnnotationVisitor;
@@ -58,7 +59,6 @@ public abstract class ProcessModuleRegistry extends AbstractMappingDependenciesI
                 continue;
             }
 
-            var gradleFilesDir = getGradleFilesDirectory().getAsFile().get().toPath();
             BiConsumer<String, String> moduleNameConsumer = (classInternalName, moduleName) -> {
                 if (moduleName.equals(depId.getName())
                     || !ALLOWER_MODULES.contains(moduleName)
@@ -93,6 +93,10 @@ public abstract class ProcessModuleRegistry extends AbstractMappingDependenciesI
                     .filter(entry -> entry.getName().endsWith(".class"))
                     .toList();
                 for (var classEntry : classEntries) {
+                    if (getBuildCancellationToken().isCancellationRequested()) {
+                        throw new BuildCancelledException();
+                    }
+
                     try (var in = zipFile.getInputStream(classEntry)) {
                         var classVisitor = new ModuleRegistryCallsClassVisitor(moduleNameConsumer);
                         var classReader = new ClassReader(in);

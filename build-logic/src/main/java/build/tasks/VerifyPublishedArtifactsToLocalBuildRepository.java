@@ -15,6 +15,7 @@ import java.io.File;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import org.gradle.api.BuildCancelledException;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.CacheableTask;
@@ -124,6 +125,10 @@ public abstract class VerifyPublishedArtifactsToLocalBuildRepository
         boolean checkExpectedFile,
         boolean mandatory
     ) {
+        if (getBuildCancellationToken().isCancellationRequested()) {
+            throw new BuildCancelledException();
+        }
+
         try {
             var expectedFile = Optional.ofNullable(pathGetter.apply(publishedDepInfo))
                 .map(this::getGradleFile)

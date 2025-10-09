@@ -3,7 +3,9 @@ package build.tasks;
 import static build.Constants.GRADLE_API_BOM_NAME;
 import static build.Constants.GRADLE_API_PUBLISH_GROUP;
 import static build.utils.AsmUtils.getSourceFile;
+import static build.utils.Utils.copyJarEntries;
 import static build.utils.Utils.createCleanDirectory;
+import static build.utils.Utils.substringBeforeLast;
 import static build.utils.ZipUtils.getZipFileEntryNames;
 import static com.google.common.collect.ImmutableSet.toImmutableSet;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -21,7 +23,6 @@ import build.dto.GradleDependencyInfo;
 import build.dto.GradlePublishedDependencies;
 import build.dto.GradlePublishedDependencyInfo;
 import build.utils.Json;
-import build.utils.Utils;
 import build.utils.WithLocalBuildRepository;
 import build.utils.WithPublishLicense;
 import build.utils.ZipUtils;
@@ -307,7 +308,7 @@ public abstract class PublishArtifactsToLocalBuildRepository
             .resolve(id.getVersion())
             .resolve(id.getName() + "-" + id.getVersion() + ".jar");
         getLogger().lifecycle("Creating {}", outputFile);
-        Utils.copyJarEntries(file, outputFile.toFile(), entriesToInclude);
+        copyJarEntries(file, outputFile.toFile(), entriesToInclude, getBuildCancellationToken());
 
         publishedDeps.getDependencies().get(id).setJarFilePath(
             getLocalBuildRepository().getAsFile().get().toPath().relativize(outputFile)
@@ -330,8 +331,8 @@ public abstract class PublishArtifactsToLocalBuildRepository
             .map(name -> {
                 var prefix = getEntryPrefix(name);
                 name = name.substring(prefix.length());
-                name = Utils.substringBeforeLast(name, ".");
-                name = Utils.substringBeforeLast(name, "$");
+                name = substringBeforeLast(name, ".");
+                name = substringBeforeLast(name, "$");
                 return prefix + name;
             })
             .distinct()
@@ -366,7 +367,7 @@ public abstract class PublishArtifactsToLocalBuildRepository
             .resolve(id.getVersion())
             .resolve(id.getName() + "-" + id.getVersion() + "-sources.jar");
         getLogger().lifecycle("Creating {}", outputFile);
-        Utils.copyJarEntries(sourcesArchiveFile, outputFile.toFile(), entriesToInclude);
+        copyJarEntries(sourcesArchiveFile, outputFile.toFile(), entriesToInclude, getBuildCancellationToken());
 
         publishedDeps.getDependencies().get(id).setSourcesJarFilePath(
             getLocalBuildRepository().getAsFile().get().toPath().relativize(outputFile)
