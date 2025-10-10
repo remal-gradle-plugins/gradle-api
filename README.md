@@ -134,7 +134,7 @@ sources JARs MUST be published for all published artifacts.
 `all` distribution provides sources for much more classes, than used in Gradle API.
 Unused sources SHOULD be removed to reduce sources JAR size.
 
-# Build logic Overview
+# Build logic overview
 
 A brief explanation of how the project works for those who want to contribute.
 
