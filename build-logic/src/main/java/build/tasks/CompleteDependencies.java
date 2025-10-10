@@ -73,8 +73,6 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
 
         fixSnapshotDependencies(gradleDependencies);
 
-        fixPublishingVersions(gradleDependencies);
-
         return gradleDependencies;
     }
 
@@ -231,17 +229,6 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
 
             snapshotId.setGroup(GRADLE_API_PUBLISH_GROUP);
             deps.get(snapshotId).setSyntheticGroup(true);
-        });
-    }
-
-
-    private void fixPublishingVersions(GradleDependencies gradleDependencies) {
-        gradleDependencies.getDependencies().forEach((depId, depInfo) -> {
-            if (depId.getGroup().equals(GRADLE_API_PUBLISH_GROUP)
-                && !depInfo.isSyntheticGroup()
-            ) {
-                depId.setVersion(gradleDependencies.getGradleVersion());
-            }
         });
     }
 

@@ -101,25 +101,30 @@ public abstract class ExtractGradleFiles
                 import java.nio.file.StandardCopyOption
                 import org.gradle.util.GradleVersion
 
-                def currentGradleVersion = GradleVersion.current().baseVersion
+                def currentBaseGradleVersion = GradleVersion.current().baseVersion
                 def buildProjectDir = file('#BUILD_PROJECT_DIR#')
 
+                // ~/.gradle/wrapper/dists/gradle-<version>-all/<hash>/gradle-<version>
                 def gradleHomeDir = gradle.gradleHomeDir?.canonicalFile
                 assert gradleHomeDir != null
 
+                // ~/.gradle/wrapper/dists/gradle-<version>-all/<hash>/gradle-<version>/lib
                 def gradleLibDir = new File(gradleHomeDir, 'lib')
                 assert gradleLibDir.isDirectory()
 
+                // ~/.gradle/wrapper/dists/gradle-<version>-all/<hash>/gradle-<version>/src
                 def sourcesParentDir = new File(gradleHomeDir, 'src')
                 assert sourcesParentDir.isDirectory()
 
-                def sourcesDirs = sourcesParentDir.listFiles().findAll{ file -> file.isDirectory() }
+                // ~/.gradle/wrapper/dists/gradle-<version>-all/<hash>/gradle-<version>/src/*
+                def sourcesDirs = sourcesParentDir.listFiles().findAll { file -> file.isDirectory() }
                 def sourcesArchiveFile = file('#GRADLE_FILES_DIR#/sources.zip')
 
+                // A task that archives all sources into a ZIP archive
                 tasks.#TASK_CREATION_METHOD#('archiveSources', Zip) {
                     sourcesDirs.forEach { from(it) }
 
-                    if (currentGradleVersion >= GradleVersion.version('5.1')) {
+                    if (currentBaseGradleVersion >= GradleVersion.version('5.1')) {
                         archiveFileName = sourcesArchiveFile.name
                         destinationDirectory = sourcesArchiveFile.parentFile
                     } else {
@@ -127,10 +132,10 @@ public abstract class ExtractGradleFiles
                         destinationDir = sourcesArchiveFile.parentFile
                     }
 
-                    if (currentGradleVersion >= GradleVersion.version('2.14')) {
+                    if (currentBaseGradleVersion >= GradleVersion.version('2.14')) {
                         metadataCharset = 'UTF-8'
                     }
-                    if (currentGradleVersion >= GradleVersion.version('3.4')) {
+                    if (currentBaseGradleVersion >= GradleVersion.version('3.4')) {
                         preserveFileTimestamps  = true
                         reproducibleFileOrder = true
                     }
@@ -139,6 +144,7 @@ public abstract class ExtractGradleFiles
                 }
 
 
+                // A task that copies all files from `gradleLibDir` info the build directory
                 tasks.#TASK_CREATION_METHOD#('copyLibs', Copy) {
                     from(gradleLibDir)
                     into('#GRADLE_FILES_DIR#/lib')
@@ -149,9 +155,11 @@ public abstract class ExtractGradleFiles
                 Map<String, Dependency> dependencyMethods = [
                     'localGroovy': project.dependencies.localGroovy(),
                     'gradleApi': project.dependencies.gradleApi(),
-                    'gradleTestKit': project.dependencies.gradleTestKit(),
                 ]
-                if (currentGradleVersion >= GradleVersion.version('5.0')) {
+                if (currentBaseGradleVersion >= GradleVersion.version('2.7')) { // see `GradleRunnerTest`
+                    dependencyMethods['gradleTestKit'] = project.dependencies.gradleTestKit()
+                }
+                if (currentBaseGradleVersion >= GradleVersion.version('5.0')) {
                     dependencyMethods['gradleKotlinDsl'] = project.dependencies.create(project.files(
                         Class.forName('org.gradle.kotlin.dsl.provider.KotlinScriptClassPathProviderKt').gradleKotlinDslOf(project)
                     ))
@@ -178,14 +186,18 @@ public abstract class ExtractGradleFiles
                             def destFiles = resultDependencies[dependencyMethod] = []
                             dependencyFiles.forEach { file ->
                                 if (file.toPath().startsWith(gradleLibDir.toPath())) {
+                                    // `file` is inside ~/.gradle/wrapper/dists/gradle-<version>-all/<hash>/gradle-<version>/lib
                                     def relativePath = gradleLibDir.toPath().relativize(file.toPath()).toString().replace("\\\\", "/")
                                     def destFile = new File('#GRADLE_FILES_DIR#/lib', relativePath)
                                     destFiles.add(buildProjectDir.toPath().relativize(destFile.toPath()).toString().replace("\\\\", "/"))
+                                    assert destFile.isFile() // already copied by 'copyLibs' task
                                 } else {
+                                    // `file` is generated by Gradle and is somewhere in ~/.gradle/caches
                                     def destFile = new File('#GRADLE_FILES_DIR#', file.name)
+                                    destFiles.add(buildProjectDir.toPath().relativize(destFile.toPath()).toString().replace("\\\\", "/"))
+                                    // copy `file` info the build directory
                                     destFile.parentFile.mkdirs()
                                     Files.copy(file.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
-                                    destFiles.add(buildProjectDir.toPath().relativize(destFile.toPath()).toString().replace("\\\\", "/"))
                                 }
                             }
                         }

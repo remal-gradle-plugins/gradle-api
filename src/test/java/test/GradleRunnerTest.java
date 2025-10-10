@@ -7,6 +7,7 @@ import static java.nio.file.Files.newOutputStream;
 import static java.nio.file.Files.write;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
+import infra.MinTestableGradleVersion;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -16,6 +17,10 @@ import org.gradle.util.GradleVersion;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+@MinTestableGradleVersion(
+    value = "2.7",
+    reason = "GradleRunner <2.7 should be loaded from a Gradle distribution"
+)
 class GradleRunnerTest {
 
     final File projectDir;
