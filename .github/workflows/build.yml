@@ -66,6 +66,8 @@ jobs:
             include:
             - /^\d+(\.\d+)*(-rc-?\d*)?$/i
             - '[${{steps.min-gradle-version.outputs.value}},${{steps.max-gradle-version.outputs.value}}.9999)'
+            exclude:
+            - '[${{steps.min-gradle-version.outputs.value}},${{steps.min-gradle-version.outputs.value}}.9999)'
     - name: Get all versions to test
       id: test-versions
       env:
