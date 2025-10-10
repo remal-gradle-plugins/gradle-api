@@ -18,6 +18,7 @@ import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toCollection;
 import static org.gradle.api.tasks.PathSensitivity.RELATIVE;
 
+import build.Constants;
 import build.dto.GradleDependencies;
 import build.dto.GradleDependencyId;
 import build.dto.GradleDependencyInfo;
@@ -56,6 +57,43 @@ import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.TaskAction;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * Publishes extracted and processed Gradle artifacts into a structured local Maven-style build repository.
+ *
+ * <p>Consumes dependency metadata from {@link CompleteDependencies} and produces a Maven-style
+ * local repository layout containing POMs JARs, and sources
+ * for dependencies with {@link Constants#GRADLE_API_PUBLISH_GROUP} group.
+ * Each published artifact represents a Gradle module or library with accurate coordinates and dependency
+ * metadata derived from previous processing stages.
+ *
+ * <p>Processing logic:
+ * <ul>
+ *   <li>Creates a clean local repository directory under {@link #getLocalBuildRepository()}
+ *   <li>Reads {@link GradleDependencies} and generates {@link GradlePublishedDependencies} as output metadata
+ *   <li>Publishes the Gradle API BOM ({@link Constants#GRADLE_API_BOM_NAME}) that lists all Gradle artifacts
+ *       managed within the repository
+ *   <li>Publishes each Gradle artifact by:
+ *     <ul>
+ *       <li>Creating a Maven POM that includes dependency and BOM import information
+ *       <li>Repackaging the artifact JAR, excluding overlapping entries from dependent artifacts
+ *       <li>Generating a corresponding sources JAR by filtering source archive entries relevant to the module
+ *     </ul>
+ * </ul>
+ *
+ * <p>Inputs:
+ * <ul>
+ *   <li>{@link #getGradleDependenciesFile()} – dependency graph produced by {@link CompleteDependencies}
+ *   <li>{@link #getGradleFilesDirectory()} – directory with extracted Gradle binaries and sources
+ *   <li>{@link #getPublishHashes()} – flag controlling whether checksum files are generated
+ * </ul>
+ *
+ * <p>Outputs:
+ * <ul>
+ *   <li>{@link #getLocalBuildRepository()} – Maven-style repository containing published artifacts
+ *   <li>{@link #getGradlePublishedDependenciesJsonFile()} – file with {@link GradlePublishedDependencies}
+ *   describing all published dependencies
+ * </ul>
+ */
 @CacheableTask
 public abstract class PublishArtifactsToLocalBuildRepository extends AbstractGradleFilesConsumerTask
     implements WithPublishLicense, WithLocalBuildRepository {

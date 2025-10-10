@@ -8,6 +8,7 @@ import static java.lang.String.join;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.stream.Collectors.toCollection;
 
+import build.Constants;
 import build.dto.GradleDependencies;
 import build.dto.GradleDependencyId;
 import build.dto.GradleDependencyInfo;
@@ -22,6 +23,40 @@ import lombok.SneakyThrows;
 import org.gradle.api.tasks.CacheableTask;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * Completes Gradle dependency metadata by inferring missing group IDs, BOM associations,
+ * and normalizing versions for known libraries.
+ *
+ * <p>Reads {@link GradleDependencies} and enriches it
+ * with additional metadata derived from file inspection and heuristics.
+ * The resulting model contains fully qualified dependency coordinates
+ * (group, name, version) suitable for publication or comparison.
+ *
+ * <p>Processing logic:
+ * <ul>
+ *   <li>Reads {@code META-INF/maven/<group>/<name>/pom.properties} files embedded in dependency JARs
+ *   to infer missing group IDs
+ *   <li>Fixes version strings for certain special cases
+ *   <li>Determines group IDs for known dependencies based on name patterns or known content,
+ *       using predefined mappings such as {@code groovy-*}, {@code kotlin-*}, etc.
+ *   <li>Assigns published {@link Constants#GRADLE_API_PUBLISH_GROUP} group to Gradle-related artifacts
+ *       or synthetic dependencies
+ *   <li>Identifies BOM artifacts (e.g. {@code groovy-bom}, {@code kotlin-bom}, etc.)
+ *   <li>Detects and normalizes {@code -SNAPSHOT} versions, assigning them synthetic Gradle groups
+ *   <li>Validates that all dependencies have resolved group IDs, throwing an error if any remain unset
+ * </ul>
+ *
+ * <p>Inputs:
+ * <ul>
+ *   <li>{@link #getGradleDependenciesFile()} – file with {@link GradleDependencies} from the previous stage
+ *   <li>{@link #getGradleFilesDirectory()} – directory containing Gradle and third-party JARs
+ * </ul>
+ *
+ * <p>Outputs:
+ * <ul>
+ *   <li>{@link #getGradleDependenciesJsonFile()} – updated {@link GradleDependencies} file
+ * </ul>
+ */
 @CacheableTask
 @SuppressWarnings("IfCanBeSwitch")
 public abstract class CompleteDependencies extends AbstractMappingDependenciesInfoTask {

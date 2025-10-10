@@ -13,6 +13,7 @@ import build.utils.WithGradleVersion;
 import java.net.URI;
 import java.util.Map;
 import java.util.Properties;
+import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.Property;
@@ -28,6 +29,49 @@ import org.gradle.tooling.GradleConnector;
 import org.gradle.tooling.internal.consumer.CancellationTokenInternal;
 import org.gradle.util.GradleVersion;
 
+/**
+ * A Gradle task that extracts Gradle distribution components for a specific Gradle version.
+ *
+ * <p>This task:
+ * <ul>
+ *   <li>Downloads and uses the official Gradle distribution ZIP for the specified version.
+ *   <li>Creates a temporary Gradle project that runs a custom build to extract key Gradle files.
+ *   <li>Archives Gradle source directories into a single {@code sources.zip} file.
+ *   <li>Copies Gradle library JARs from the distribution to {@code lib/}.
+ *   <li>Resolves and records Gradle-provided dependencies such as {@link DependencyHandler#gradleApi()},
+ *   {@link DependencyHandler#localGroovy()}, {@link DependencyHandler#gradleTestKit()},
+ *   and {@code gradleKotlinDsl()} (where applicable).
+ *   <li>Generates a JSON manifest ({@code info.json}) describing the Gradle version, sources archive,
+ *   and all resolved dependency files.
+ * </ul>
+ *
+ * <p>The generated output directory structure typically contains:
+ * <pre>
+ * build/ExtractGradleFiles/
+ * ├── lib/                 (Gradle JARs)
+ * ├── sources.zip          (Archived Gradle sources)
+ * └── info.json            (Metadata and dependency manifest)
+ * </pre>
+ *
+ * <p>This task uses the Gradle Tooling API to execute a minimal build inside the specified Gradle version.
+ * It disables caching, parallelism, and configuration caching to ensure reproducibility and isolation.
+ *
+ * <p>The task is cacheable and uses Gradle’s Java Toolchain API to select a compatible JDK
+ * based on the target Gradle version.
+ *
+ * <p>Intended use cases:
+ * <ul>
+ *   <li>Building Gradle API classpaths for IDEs or tooling integrations.
+ *   <li>Collecting Gradle distribution metadata for offline analysis or testing.
+ *   <li>Ensuring reproducible Gradle environment snapshots across versions.
+ * </ul>
+ *
+ * <p>Outputs:
+ * <ul>
+ *   <li>{@link #getGradleFilesDirectory()} - Directory containing extracted files and archives.
+ *   <li>{@link #getGradleRawDependenciesJsonFile()} - JSON file describing all resolved dependencies.
+ * </ul>
+ */
 @CacheableTask
 public abstract class ExtractGradleFiles
     extends AbstractBuildLogicTask

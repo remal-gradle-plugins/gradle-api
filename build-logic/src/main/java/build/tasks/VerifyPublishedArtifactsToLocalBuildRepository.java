@@ -28,6 +28,34 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.VerificationTask;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * Verifies that artifacts published to the local Gradle Maven-style build repository can be successfully resolved.
+ *
+ * <p>Consumes the JSON metadata produced by {@link PublishArtifactsToLocalBuildRepository}
+ * and checks that each declared artifact (POM, JAR, sources JAR) exists and is correctly resolvable
+ * using Gradle’s dependency resolution mechanism.
+ *
+ * <p>Validation logic:
+ * <ul>
+ *   <li>Loads {@link GradlePublishedDependencies} describing all published artifacts
+ *   <li>For each dependency:
+ *     <ul>
+ *       <li>Verifies that the POM file exists and can be resolved
+ *       <li>Verifies that the main artifact JAR exists and resolves successfully
+ *           (except for the Gradle API BOM, which has no JAR)
+ *       <li>Verifies that the sources JAR (if present) resolves successfully
+ *     </ul>
+ *   <li>Resolves each artifact using detached configurations to ensure correctness
+ * </ul>
+ *
+ * <p>Inputs:
+ * <ul>
+ *   <li>{@link #getLocalBuildRepository()} – local Gradle Maven-style build repository
+ *   <li>{@link #getGradlePublishedDependenciesJsonFile()} – {@link GradlePublishedDependencies} file
+ *   describing published dependencies
+ *   <li>{@link #getIgnoreFailures()} – controls whether verification failures abort the build
+ * </ul>
+ */
 @CacheableTask
 public abstract class VerifyPublishedArtifactsToLocalBuildRepository
     extends AbstractBuildLogicTask

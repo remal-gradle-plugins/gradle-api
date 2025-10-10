@@ -18,6 +18,7 @@ import java.util.function.Consumer;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import org.gradle.api.BuildCancelledException;
+import org.gradle.api.internal.classpath.ModuleRegistry;
 import org.gradle.api.tasks.CacheableTask;
 import org.jspecify.annotations.Nullable;
 import org.objectweb.asm.AnnotationVisitor;
@@ -29,6 +30,35 @@ import org.objectweb.asm.TypePath;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
+/**
+ * Scans Gradle module JARs to discover runtime dependencies declared via {@code ModuleRegistry} calls.
+ *
+ * <p>Reads {@link GradleDependencies} and inspects compiled class files in
+ * Gradle JARs under {@link #getGradleFilesDirectory()}.
+ * Uses the ASM library to analyze bytecode and detect invocations of {@code org.gradle.*.ModuleRegistry} methods
+ * that reference other Gradle modules.
+ *
+ * <p>Processing logic:
+ * <ul>
+ *   <li>Iterates through all Gradle JARs whose names start with {@code gradle-}
+ *   <li>For each class file, inspects method calls referencing {@link ModuleRegistry}
+ *   <li>Detects argument constants representing module names and resolves corresponding module JARs
+ *   <li>Links discovered modules as sub-dependencies within the existing dependency graph
+ *   <li>Recursively processes new modules until all reachable modules are analyzed
+ *   <li>Skips modules not explicitly whitelisted in {@link #ALLOWER_MODULES}
+ * </ul>
+ *
+ * <p>Inputs:
+ * <ul>
+ *   <li>{@link #getGradleDependenciesFile()} – file with {@link GradleDependencies} from the previous stage
+ *   <li>{@link #getGradleFilesDirectory()} – directory containing Gradle module JARs
+ * </ul>
+ *
+ * <p>Outputs:
+ * <ul>
+ *   <li>{@link #getGradleDependenciesJsonFile()} – updated {@link GradleDependencies} file
+ * </ul>
+ */
 @CacheableTask
 public abstract class ProcessModuleRegistry extends AbstractMappingDependenciesInfoTask {
 

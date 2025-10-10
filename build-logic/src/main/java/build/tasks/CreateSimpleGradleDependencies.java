@@ -7,11 +7,39 @@ import build.dto.GradleDependencyInfo;
 import build.dto.GradleRawDependencies;
 import build.utils.Json;
 import java.util.Collection;
+import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.PathSensitive;
 
+/**
+ * Converts raw Gradle dependency metadata into a structured dependency graph.
+ *
+ * <p>Reads the JSON file produced by {@link ExtractGradleFiles}, containing Gradle version,
+ * sources archive location, and dependency file paths. Builds a {@link GradleDependencies}
+ * model that links dependency methods to their corresponding files.
+ *
+ * <p>Transformation logic:
+ * <ul>
+ *   <li>Creates a root {@link GradleDependencyInfo} for each dependency method such as
+ *   {@link DependencyHandler#gradleApi()}, {@link DependencyHandler#localGroovy()}
+ *   {@link DependencyHandler#gradleTestKit()}, and {@code gradleKotlinDsl()}.
+ *   <li>Assigns the main JAR path to each root dependency and adds related files as sub-dependencies.
+ *   <li>Ensures every referenced file path has a corresponding {@link GradleDependencyInfo} entry.
+ * </ul>
+ *
+ * <p>Inputs:
+ * <ul>
+ *   <li>{@link #getRawGradleDependenciesFile()} – raw dependency metadata in JSON format
+ *   <li>{@link #getGradleFilesDirectory()} – directory with extracted Gradle files
+ * </ul>
+ *
+ * <p>Outputs:
+ * <ul>
+ *   <li>{@link #getGradleDependenciesJsonFile()} – file with {@link GradleDependencies}
+ * </ul>
+ */
 @CacheableTask
 public abstract class CreateSimpleGradleDependencies extends AbstractProducingDependenciesInfoTask {
 

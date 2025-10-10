@@ -9,6 +9,7 @@ import static java.nio.file.Files.walk;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static org.gradle.api.tasks.PathSensitivity.RELATIVE;
 
+import build.Constants;
 import build.utils.WithLocalBuildRepository;
 import build.utils.WithPublishRepository;
 import com.google.common.net.MediaType;
@@ -32,6 +33,20 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.UntrackedTask;
 import org.gradle.work.DisableCachingByDefault;
 
+/**
+ * Publishes artifacts from the local Gradle Maven-style build repository to a remote repository via HTTP.
+ *
+ * <p>Uploads all files under {@link #getLocalBuildRepository()} that belong to the
+ * {@link Constants#GRADLE_API_PUBLISH_GROUP} group, using authenticated HTTP PUT requests.
+ *
+ * <p>Skips files that are already present on the remote server (verified via an HTTP HEAD check).
+ *
+ * <p>Inputs:
+ * <ul>
+ *   <li>{@link #getLocalBuildRepository()} – local Gradle Maven-style build repository
+ *   <li>{@link #getRepository()} – remote Maven repository configuration (URL, username, password)
+ * </ul>
+ */
 @DisableCachingByDefault(because = "This task publishes artifacts to a remote repository")
 @UntrackedTask(because = "This task publishes artifacts to a remote repository")
 public abstract class PublishArtifacts extends AbstractBuildLogicTask
