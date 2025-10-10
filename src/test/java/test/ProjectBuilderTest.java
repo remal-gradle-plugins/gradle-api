@@ -33,6 +33,11 @@ class ProjectBuilderTest {
 
 
     @Test
+    void createProject() {
+        assertDoesNotThrow(() -> createProject(projectDir));
+    }
+
+    @Test
     void applyJavaPlugin() {
         Project project = createProject(projectDir);
         assertDoesNotThrow(() -> project.getPluginManager().apply("java"));

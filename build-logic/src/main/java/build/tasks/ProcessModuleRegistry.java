@@ -70,6 +70,10 @@ public abstract class ProcessModuleRegistry extends AbstractMappingDependenciesI
     protected GradleDependencies mapGradleDependencies(GradleDependencies gradleDependencies) throws Exception {
         var queue = new ArrayDeque<>(gradleDependencies.getDependencies().entrySet());
         while (true) {
+            if (getBuildCancellationToken().isCancellationRequested()) {
+                throw new BuildCancelledException();
+            }
+
             var queueElement = queue.pollFirst();
             if (queueElement == null) {
                 break;
@@ -90,10 +94,17 @@ public abstract class ProcessModuleRegistry extends AbstractMappingDependenciesI
             }
 
             BiConsumer<String, String> moduleNameConsumer = (classInternalName, moduleName) -> {
-                if (moduleName.equals(depId.getName())
-                    || !ALLOWER_MODULES.contains(moduleName)
+                if (moduleName.isEmpty()
+                    || moduleName.equals(depId.getName())
                 ) {
                     return;
+                }
+
+                if (!ALLOWER_MODULES.contains(moduleName)) {
+                    getLogger().info("{} references to `{}` Gradle module", classInternalName, moduleName);
+                    return;
+                } else {
+                    getLogger().lifecycle("{} references to `{}` Gradle module", classInternalName, moduleName);
                 }
 
                 var moduleFile = getGradleModuleFile(moduleName);
