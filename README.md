@@ -82,13 +82,13 @@ Artifacts for all Gradle release versions greater than 3.0 MUST be published.
 The project uses [Gradle Tooling API](https://docs.gradle.org/current/userguide/tooling_api.html)
 to download Gradle distributions and extract artifacts.
 
-Gradle Tooling API requires at least Gradle 2.6, but publishing 2.* artifacts is considerably more difficult.
+Gradle Tooling API requires at least Gradle 2.6, but publishing 2.\* artifacts is considerably more difficult.
 Because of that, it's decided to publish only >= 3.0 artifacts mandatorily.
 
 ## MAY publish artifacts for Gradle 2.* release versions
 
-Building 2.* artifacts is considerably more difficult, than building >= 3.*.
-That's why publishing 2.* artifacts is optional.
+Building and publishing 2.\* artifacts is considerably more difficult, than building >= 3.\*.
+That's why publishing 2.\* artifacts is optional.
 
 ## SHOULD publish artifacts for release-candidates Gradle versions
 
