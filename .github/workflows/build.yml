@@ -184,7 +184,7 @@ jobs:
       if: ${{needs.prepare.outputs.publish-matrix-includes == '[]'}}
       uses: remal-github-actions/cache-gradle@main
       with:
-        github-job: ${{matrix.gradle}}
+        cache-scope: ${{matrix.gradle}}
         strategy-job-index: 0
         strategy-job-total: 0
 
