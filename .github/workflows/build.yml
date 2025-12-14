@@ -8,6 +8,7 @@ on:
   pull_request: { }
   schedule:
   - cron: '13/30 * * * *'
+  workflow_dispatch: { }
 
 permissions:
   contents: read
