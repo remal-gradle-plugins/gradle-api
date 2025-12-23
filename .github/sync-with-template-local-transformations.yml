@@ -21,4 +21,4 @@ transformations:
   script: |
     return content
         .replaceAll(/(`)build\1/g, '$1build-success$1')
-        .replaceAll(/(=\s*)build(\n|$)/g, '$1build-success$2')
+        .replaceAll(/(=\s*)build('|\n|$)/g, '$1build-success$2')
