@@ -32,7 +32,7 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-guava")
     implementation("org.ow2.asm:asm-tree")
     implementation("org.apache.maven:maven-model:3.9.12")
-    implementation("org.assertj:assertj-core:3.27.6")
+    implementation("org.assertj:assertj-core:3.27.7")
 }
 
 tasks.withType<JavaCompile>().configureEach {
