@@ -38,7 +38,7 @@ jobs:
     - name: Validate Gradle Wrapper
       uses: Wandalen/wretry.action/main@v3.8.0
       with:
-        action: gradle/actions/wrapper-validation@v5
+        action: gradle/actions/wrapper-validation@v6
         attempt_limit: 3
         attempt_delay: 5000
 
