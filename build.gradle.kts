@@ -52,7 +52,7 @@ dependencies {
 
     testImplementation("org.junit.jupiter:junit-jupiter-api")
     testImplementation("org.junit.jupiter:junit-jupiter-params")
-    testImplementation("com.google.guava:guava:33.5.0-jre")
+    testImplementation("com.google.guava:guava:33.6.0-jre")
     testImplementation("org.assertj:assertj-core:3.27.7")
 
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
