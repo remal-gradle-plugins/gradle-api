@@ -45,7 +45,7 @@ buildLogic {
 
 
 dependencies {
-    allConstraints(platform("org.junit:junit-bom:5.14.3"))
+    allConstraints(platform("org.junit:junit-bom:5.14.4"))
 
 
     testCompileOnly(gradleTestKit())
