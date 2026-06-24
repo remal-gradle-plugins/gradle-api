@@ -8,5 +8,16 @@
   },
 
   // $$$sync-with-template-modifiable: local $$$
+
+  packageRules: [
+    {
+      matchCategories: ["java"],
+      matchPackagePatterns: [
+        "^org\\.junit:"
+      ],
+      allowedVersions: "(0,5.9999)",
+    },
+  ],
+
   // $$$sync-with-template-modifiable-end$$$
 }
