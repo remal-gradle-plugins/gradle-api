@@ -1,23 +1,20 @@
 {
-  $schema: "https://docs.renovatebot.com/renovate-schema.json",
-  extends: ["github>remal/renovate-config:global"],
-
-  "git-submodules": {
-    // This is in beta for now, so let's use Dependabot to update Git submodules
-    enabled: false
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'github>remal/renovate-config:global',
+  ],
+  'git-submodules': {
+    enabled: false,
   },
-
-  // $$$sync-with-template-modifiable: local $$$
-
   packageRules: [
     {
-      matchCategories: ["java"],
-      matchPackagePatterns: [
-        "^org\\.junit:"
+      matchCategories: [
+        'java',
       ],
-      allowedVersions: "(0,5.9999)",
+      allowedVersions: '(0,5.9999)',
+      matchPackageNames: [
+        '/^org\\.junit:/',
+      ],
     },
   ],
-
-  // $$$sync-with-template-modifiable-end$$$
 }
