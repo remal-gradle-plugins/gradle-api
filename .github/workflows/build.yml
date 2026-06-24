@@ -33,7 +33,7 @@ jobs:
     timeout-minutes: 5
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
 
     - name: Validate Gradle Wrapper
       uses: Wandalen/wretry.action/main@v3.8.0
@@ -179,7 +179,7 @@ jobs:
           8
 
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
 
     - name: Cache Gradle
       if: ${{needs.prepare.outputs.publish-matrix-includes == '[]'}}
