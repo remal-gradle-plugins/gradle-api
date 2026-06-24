@@ -12,8 +12,8 @@
   packageRules: [
     {
       matchCategories: ["java"],
-      matchPackagePatterns: [
-        "^org\\.junit:"
+      matchPackageNames: [
+        "/^org\\.junit:/"
       ],
       allowedVersions: "(0,5.9999)",
     },
