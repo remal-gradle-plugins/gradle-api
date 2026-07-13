@@ -2,6 +2,13 @@ pluginManagement {
     includeBuild("build-logic")
 
     repositories {
+        if (System.getenv("CI") == "true") {
+            maven {
+                name = "googleMavenCentralMirror"
+                url = uri("https://maven-central.storage-download.googleapis.com/maven2/")
+                mavenContent { releasesOnly() }
+            }
+        }
         gradlePluginPortal()
         mavenCentral()
     }
