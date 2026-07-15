@@ -10,7 +10,7 @@ java {
     }
 }
 
-val allConstraints by configurations.creating conf@{
+val allConstraints = configurations.create("allConstraints") conf@{
     isCanBeResolved = false
     configurations
         .matching { it !== this@conf }
