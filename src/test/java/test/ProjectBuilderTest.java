@@ -1,6 +1,7 @@
 package test;
 
 import static com.google.common.io.MoreFiles.deleteRecursively;
+import static java.lang.Boolean.parseBoolean;
 import static java.nio.file.Files.createTempDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -9,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.repositories.MavenRepositoryContentDescriptor;
 import org.gradle.testfixtures.ProjectBuilder;
 import org.gradle.util.GradleVersion;
 import org.junit.jupiter.api.AfterEach;
@@ -49,6 +51,15 @@ class ProjectBuilderTest {
 
         Project project = createProject(projectDir);
         project.getPluginManager().apply("java");
+        if (parseBoolean(System.getenv("CI"))) {
+            project.getRepositories().maven(repo -> {
+                repo.setName("googleMavenCentralMirror");
+                repo.setUrl("https://maven-central.storage-download.googleapis.com/maven2/");
+                if (GradleVersion.current().getBaseVersion().compareTo(GradleVersion.version("5.1")) >= 0) {
+                    repo.mavenContent(MavenRepositoryContentDescriptor::releasesOnly);
+                }
+            });
+        }
         project.getRepositories().mavenCentral();
 
         Configuration depsConf = project.getConfigurations().getByName(
