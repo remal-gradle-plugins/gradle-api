@@ -92,7 +92,7 @@ jobs:
         echo "matrix=${MATRIX}" | tee -a "${GITHUB_OUTPUT}"
 
     - name: Get published versions matrix
-      if: ${{github.ref == 'refs/heads/main'}}
+      if: ${{github.ref == 'refs/heads/main' && !inputs.gradle-version}}
       id: published-versions-matrix
       uses: remal-github-actions/matrix-versions@v1
       with:
@@ -105,7 +105,7 @@ jobs:
             - 'https://maven.pkg.github.com/remal-gradle-api/packages'
 
     - name: Convert published versions matrix to a JSON array
-      if: ${{github.ref == 'refs/heads/main'}}
+      if: ${{github.ref == 'refs/heads/main' && !inputs.gradle-version}}
       id: published-versions-array
       env:
         MATRIX: ${{steps.published-versions-matrix.outputs.allMatrixIncludes}}
@@ -114,7 +114,7 @@ jobs:
         echo "json-array=${JSON_ARRAY}" | tee -a "${GITHUB_OUTPUT}"
 
     - name: Get stable versions matrix
-      if: ${{github.ref == 'refs/heads/main'}}
+      if: ${{github.ref == 'refs/heads/main' && !inputs.gradle-version}}
       id: stable-versions-matrix
       uses: remal-github-actions/matrix-versions@v1
       with:
@@ -129,7 +129,7 @@ jobs:
             - '[${{steps.min-gradle-version.outputs.value}},${{steps.max-gradle-version.outputs.value}}.9999)'
 
     - name: Get old unstable versions matrix
-      if: ${{github.ref == 'refs/heads/main'}}
+      if: ${{github.ref == 'refs/heads/main' && !inputs.gradle-version}}
       id: old-unstable-versions-matrix
       uses: remal-github-actions/matrix-versions@v1
       with:
@@ -144,7 +144,7 @@ jobs:
             - '[${{steps.min-gradle-version.outputs.value}},${{fromJSON(steps.stable-versions-matrix.outputs.allMatrixIncludes)[0].gradle}})'
 
     - name: Convert old unstable versions matrix to a JSON array
-      if: ${{github.ref == 'refs/heads/main'}}
+      if: ${{github.ref == 'refs/heads/main' && !inputs.gradle-version}}
       id: old-unstable-versions-array
       env:
         MATRIX: ${{steps.old-unstable-versions-matrix.outputs.allMatrixIncludes}}
@@ -153,7 +153,7 @@ jobs:
         echo "json-array=${JSON_ARRAY}" | tee -a "${GITHUB_OUTPUT}"
 
     - name: Compose versions to publish exclusions
-      if: ${{github.ref == 'refs/heads/main'}}
+      if: ${{github.ref == 'refs/heads/main' && !inputs.gradle-version}}
       id: publish-versions-exclusions
       env:
         EXCLUSIONS_1: ${{steps.published-versions-array.outputs.json-array}}
@@ -163,7 +163,7 @@ jobs:
         echo "json-array=${JSON_ARRAY}" | tee -a "${GITHUB_OUTPUT}"
 
     - name: Get versions to publish
-      if: ${{github.ref == 'refs/heads/main'}}
+      if: ${{github.ref == 'refs/heads/main' && !inputs.gradle-version}}
       id: publish-versions
       uses: remal-github-actions/matrix-versions@v1
       with:
