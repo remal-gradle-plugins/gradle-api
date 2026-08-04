@@ -1,7 +1,7 @@
 plugins {
     `java-library`
     `java-gradle-plugin`
-    id("name.remal.lombok") version "3.2.1"
+    id("name.remal.lombok") version "3.2.2"
 }
 
 java {
