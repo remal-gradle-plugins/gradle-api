@@ -18,7 +18,7 @@ val allConstraints = configurations.create("allConstraints") conf@{
 }
 
 dependencies {
-    allConstraints(platform("com.fasterxml.jackson:jackson-bom:2.22.1"))
+    allConstraints(platform("com.fasterxml.jackson:jackson-bom:2.22.2"))
     allConstraints(platform("org.ow2.asm:asm-bom:9.10.1"))
 
     compileOnly("org.jetbrains:annotations:26.1.0")
