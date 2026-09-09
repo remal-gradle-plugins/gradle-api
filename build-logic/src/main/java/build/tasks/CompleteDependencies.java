@@ -96,6 +96,8 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
         gradleDependencies.getDependencies().forEach(this::updateGroup);
         gradleDependencies.getDependencies().forEach(this::updateBomDependencyId);
 
+        gradleDependencies.getDependencies().keySet().forEach(depId -> fixGradleModule(gradleDependencies, depId));
+
         var depIdsWithoutGroup = gradleDependencies.getDependencies()
             .keySet()
             .stream()
@@ -166,15 +168,6 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
         }
 
 
-        if (depNamePrefix.startsWith("gradle-")
-            || depNamePrefix.startsWith("local-groovy-")
-            || depNamePrefix.startsWith("native-platform-")
-        ) {
-            depId.setGroup(GRADLE_API_PUBLISH_GROUP);
-            return;
-        }
-
-
         var depFile = Optional.ofNullable(depInfo.getPath())
             .map(this::getProjectRelativeFile)
             .orElse(null);
@@ -231,6 +224,28 @@ public abstract class CompleteDependencies extends AbstractMappingDependenciesIn
                 depInfo.setBom(depId.withName("asm-bom"));
             }
             return;
+        }
+    }
+
+    /**
+     * Gradle 9.8+ JARs embed pom.properties with {@code groupId=org.gradle},
+     * which no Maven repository publishes, so the plugin's group is forced instead.
+     * Gradle module JARs are also named with the base version
+     * ({@code gradle-core-9.8.0.jar} in 9.8.0-rc-1),
+     * so the full Gradle version is forced to keep RC builds off the final release coordinates.
+     */
+    private void fixGradleModule(GradleDependencies gradleDependencies, GradleDependencyId depId) {
+        var depNamePrefix = depId.getName() + "-";
+
+        if (depNamePrefix.startsWith("gradle-")
+            || depNamePrefix.startsWith("local-groovy-")
+            || depNamePrefix.startsWith("native-platform-")
+        ) {
+            depId.setGroup(GRADLE_API_PUBLISH_GROUP);
+        }
+
+        if (depNamePrefix.startsWith("gradle-")) {
+            depId.setVersion(gradleDependencies.getGradleVersion());
         }
     }
 
