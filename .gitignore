@@ -7,10 +7,20 @@
 gha-creds-*.json
 
 
+# Codex
+AGENTS.override.md
+
+
 # Claude
 .claude/*.local.*
 .claude/*.lock
 .claude/worktrees/
+CLAUDE.local.md
+
+
+# Design specs and implementation plans written by the Superpowers skill (brainstorming/writing-plans) - local planning notes, not meant to be shared in the repo
+docs/superpowers/plans/
+docs/superpowers/specs/
 
 
 # Logs:
@@ -91,3 +101,5 @@ out/
 .classpath
 .project
 .settings/
+bin/
+!**/src/**/bin/

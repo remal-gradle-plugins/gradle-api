@@ -7,7 +7,6 @@ includes:
 - '.gitattributes'
 - '.gitignore'
 - '.editorconfig'
-- 'LICENSE'
 - 'retry-connection-timeouts'
 - '*-retry-connection-timeouts'
 - 'retry-connection-timeouts-*'
@@ -20,6 +19,7 @@ includes:
 excludes:
 - '.github/workflows/*template*-cleanup.*'
 - '.github/*template*-cleanup/**'
+- '.github/workflows/repo-local-*'
 modifiable-sections-exclusions:
 - '.yarn/plugins/**'
 - '.yarn/releases/**'
