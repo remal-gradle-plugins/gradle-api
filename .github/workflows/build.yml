@@ -192,7 +192,7 @@ jobs:
     - name: Setup Java
       uses: actions/setup-java@v6
       with:
-        distribution: temurin
+        distribution: liberica
         java-version: |
           25
           17
